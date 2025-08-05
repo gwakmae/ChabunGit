@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ChabunGit")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0c387cd28efd40e424b7e377fa346f0a9baa19c6")]
 [assembly: System.Reflection.AssemblyProductAttribute("ChabunGit")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ChabunGit")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

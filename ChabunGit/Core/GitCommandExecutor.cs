@@ -1,3 +1,5 @@
+// 파일 경로: ChabunGit/Core/GitCommandExecutor.cs (수정된 코드)
+
 using System.Diagnostics;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,7 +12,7 @@ namespace ChabunGit.Core
     public class GitCommandExecutor
     {
         /// <summary>
-        *   Git 명령어 실행 결과를 담는 레코드(Record)입니다. 불변성을 가집니다.
+        /// Git 명령어 실행 결과를 담는 레코드(Record)입니다. 불변성을 가집니다.
         /// </summary>
         /// <param name="Output">표준 출력 결과</param>
         /// <param name="Error">표준 오류 결과</param>
@@ -18,7 +20,7 @@ namespace ChabunGit.Core
         public record ProcessResult(string Output, string Error, int ExitCode);
 
         /// <summary>
-        *   지정된 경로에서 Git 명령어를 비동기적으로 실행합니다.
+        /// 지정된 경로에서 Git 명령어를 비동기적으로 실행합니다.
         /// </summary>
         /// <param name="workingDirectory">명령어를 실행할 Git 저장소 경로</param>
         /// <param name="arguments">git 명령어 뒤에 붙을 인자 (예: "status", "commit -m \"message\"")</param>
@@ -27,14 +29,14 @@ namespace ChabunGit.Core
         {
             var processStartInfo = new ProcessStartInfo
             {
-                FileName = "git", // 시스템 PATH에 git.exe가 등록되어 있어야 합니다.
+                FileName = "git",
                 Arguments = arguments,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 WorkingDirectory = workingDirectory,
-                StandardOutputEncoding = Encoding.UTF8, // 출력 결과의 한글 깨짐 방지
+                StandardOutputEncoding = Encoding.UTF8,
                 StandardErrorEncoding = Encoding.UTF8,
             };
 
@@ -42,11 +44,9 @@ namespace ChabunGit.Core
 
             process.Start();
 
-            // 표준 출력과 표준 에러 스트림을 비동기적으로 읽습니다.
             Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
             Task<string> errorTask = process.StandardError.ReadToEndAsync();
 
-            // 프로세스가 끝날 때까지 비동기적으로 대기합니다.
             await process.WaitForExitAsync();
 
             string output = await outputTask;
@@ -55,4 +55,4 @@ namespace ChabunGit.Core
             return new ProcessResult(output, error, process.ExitCode);
         }
     }
-}```
+}
