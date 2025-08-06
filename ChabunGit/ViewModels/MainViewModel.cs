@@ -1,4 +1,5 @@
 ﻿// File: ChabunGit/ViewModels/MainViewModel.cs
+using ChabunGit.Core; // [수정] GitCommandExecutor를 사용하기 위해 네임스페이스를 추가합니다.
 using ChabunGit.Models;
 using ChabunGit.Services.Abstractions;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -18,8 +19,7 @@ namespace ChabunGit.ViewModels
         private readonly IDialogService _dialogService;
         private readonly IConfigManager _configManager;
         private readonly IPromptService _promptService;
-
-        // ▼▼▼ [수정] _originalDiff, _translatedDiff 필드를 하나로 통합합니다 ▼▼▼
+        
         private string _currentDiff = string.Empty;
 
         [ObservableProperty] private bool _isBusy;
@@ -65,12 +65,17 @@ namespace ChabunGit.ViewModels
         [ObservableProperty] private bool _guideCanAddRemote;
         [ObservableProperty] private bool _guideCanComplete;
 
-        public MainViewModel(IGitService gitService, IDialogService dialogService, IConfigManager configManager, IPromptService promptService)
+        // ▼▼▼ [수정] 생성자를 수정하여 GitCommandExecutor를 주입받고 이벤트를 구독합니다. ▼▼▼
+        public MainViewModel(IGitService gitService, IDialogService dialogService, IConfigManager configManager, IPromptService promptService, GitCommandExecutor gitCommandExecutor)
         {
             _gitService = gitService;
             _dialogService = dialogService;
             _configManager = configManager;
             _promptService = promptService;
+
+            // GitCommandExecutor에서 발생하는 이벤트를 구독하여 AddLog 메서드를 실행합니다.
+            // 실행되는 git 명령어를 로그에 즉시 표시합니다.
+            gitCommandExecutor.OnCommandExecuting += command => AddLog($"▶️ {command}");
 
             CommitHistory.CollectionChanged += (s, e) => OnPropertyChanged(nameof(CanUndoLastCommit));
         }
@@ -91,8 +96,6 @@ namespace ChabunGit.ViewModels
 
             if (_gitService.IsGitRepository(folderPath))
             {
-                // ▼▼▼ 여기에 호출 코드 추가 ▼▼▼
-                // 폴더를 선택했을 때 Git 저장소라면, 인코딩 설정을 검사하고 보장합니다.
                 await _gitService.EnsureUtf8ConfigAsync(folderPath);
 
                 IsNewProjectGuideActive = false;
