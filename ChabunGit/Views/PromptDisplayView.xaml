@@ -7,9 +7,17 @@
         xmlns:vm="clr-namespace:ChabunGit.ViewModels"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:PromptDisplayViewModel}"
-        Title="AI 프롬프트" Height="500" Width="700" ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
+        Title="{Binding Title}" Height="500" Width="700" ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
     <DockPanel Margin="10">
-        <Button Content="{Binding CopyButtonText}" Command="{Binding CopyToClipboardCommand}" DockPanel.Dock="Bottom" Margin="0,10,0,0"/>
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="✨ AI 프롬프트 생성" 
+                    Command="{Binding GenerateAiPromptCommand}" 
+                    Visibility="{Binding IsGenerateButtonVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
+                    ToolTip="현재 내용을 바탕으로 AI에게 질문할 커밋 메시지 프롬프트를 생성합니다."/>
+            <Button Content="{Binding CopyButtonText}" 
+                    Command="{Binding CopyToClipboardCommand}" 
+                    Margin="5,0,0,0"/>
+        </StackPanel>
         <TextBox Text="{Binding PromptText}" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" FontFamily="Consolas"/>
     </DockPanel>
 </Window>

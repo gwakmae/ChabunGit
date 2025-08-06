@@ -6,9 +6,8 @@ namespace ChabunGit.Services.Abstractions
         string? ShowFolderBrowserDialog(string description);
         void ShowMessage(string message, string caption);
         bool ShowConfirmation(string message, string caption);
-        void ShowPrompt(string title, string promptText);
+        void ShowPrompt(string title, string promptText, bool isForCommitAi = false);
         string? ShowGitignoreEditor(string initialContent);
         void ShowCommitDetails(string commitHash, string commitDetails);
-
     }
 }

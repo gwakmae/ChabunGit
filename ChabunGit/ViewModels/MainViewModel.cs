@@ -20,7 +20,8 @@ namespace ChabunGit.ViewModels
         private readonly IConfigManager _configManager;
         private readonly IPromptService _promptService;
         
-        private string _currentDiff = string.Empty;
+        // ▼▼▼ [삭제] _currentDiff 필드는 더 이상 필요하지 않습니다. ▼▼▼
+        // private string _currentDiff = string.Empty;
 
         [ObservableProperty] private bool _isBusy;
         [ObservableProperty] private bool _isNewProjectGuideActive;
@@ -45,6 +46,7 @@ namespace ChabunGit.ViewModels
         private string _newProjectGitHubUrl = "";
 
         [ObservableProperty]
+        // ▼▼▼ [수정] AnalyzeChangesCommand의 CanExecute는 IsRepoValid에만 의존하도록 변경합니다. ▼▼▼
         [NotifyCanExecuteChangedFor(nameof(FetchCommand), nameof(PushCommand), nameof(CommitCommand), nameof(UndoLastCommitCommand), nameof(ResetToCommitCommand), nameof(EditGitignoreCommand), nameof(GenerateGitignorePromptCommand), nameof(AnalyzeChangesCommand))]
         private bool _isRepoValid;
 
@@ -52,9 +54,10 @@ namespace ChabunGit.ViewModels
         [NotifyCanExecuteChangedFor(nameof(PullCommand))]
         private bool _canPull;
 
-        [ObservableProperty]
-        [NotifyCanExecuteChangedFor(nameof(CreateFinalPromptCommand))]
-        private bool _canCreateFinalPrompt;
+        // ▼▼▼ [삭제] CanCreateFinalPrompt와 관련된 속성은 이제 필요 없습니다. ▼▼▼
+        // [ObservableProperty]
+        // [NotifyCanExecuteChangedFor(nameof(CreateFinalPromptCommand))]
+        // private bool _canCreateFinalPrompt;
 
         public ObservableCollection<string> ChangedFiles { get; } = new();
         public ObservableCollection<CommitInfo> CommitHistory { get; } = new();
@@ -65,16 +68,13 @@ namespace ChabunGit.ViewModels
         [ObservableProperty] private bool _guideCanAddRemote;
         [ObservableProperty] private bool _guideCanComplete;
 
-        // ▼▼▼ [수정] 생성자를 수정하여 GitCommandExecutor를 주입받고 이벤트를 구독합니다. ▼▼▼
         public MainViewModel(IGitService gitService, IDialogService dialogService, IConfigManager configManager, IPromptService promptService, GitCommandExecutor gitCommandExecutor)
         {
             _gitService = gitService;
             _dialogService = dialogService;
             _configManager = configManager;
             _promptService = promptService;
-
-            // GitCommandExecutor에서 발생하는 이벤트를 구독하여 AddLog 메서드를 실행합니다.
-            // 실행되는 git 명령어를 로그에 즉시 표시합니다.
+            
             gitCommandExecutor.OnCommandExecuting += command => AddLog($"▶️ {command}");
 
             CommitHistory.CollectionChanged += (s, e) => OnPropertyChanged(nameof(CanUndoLastCommit));
@@ -315,6 +315,7 @@ namespace ChabunGit.ViewModels
             string prompt = await _promptService.CreateGitignorePromptAsync(SelectedFolder!);
             IsBusy = false;
             AddLog("AI 질문지 생성 완료.");
+            // ▼▼▼ [수정] isForCommitAi 플래그를 사용하지 않음 (기본값 false) ▼▼▼
             _dialogService.ShowPrompt(".gitignore 질문지 생성", prompt);
         }
 
@@ -388,42 +389,24 @@ namespace ChabunGit.ViewModels
         private async Task AnalyzeChangesAsync()
         {
             IsBusy = true;
-            CanCreateFinalPrompt = false;
+            // ▼▼▼ [삭제] CanCreateFinalPrompt = false; 줄을 삭제합니다. ▼▼▼
             AddLog("변경점 분석을 시작합니다...");
 
-            // [수정] 단순화된 GetDiffAsync 메서드를 호출합니다.
-            _currentDiff = await _promptService.GetDiffAsync(SelectedFolder!);
-
-            // [수정] 번역 과정이 없으므로, 창 제목도 단순하게 변경합니다.
-            _dialogService.ShowPrompt("변경점 분석 결과", _currentDiff);
-            AddLog("변경점 분석 완료.");
-
-            // 변경 사항이 있을 때만 2단계 버튼 활성화
-            if (_currentDiff != "커밋할 변경 사항이 없습니다.")
-            {
-                CanCreateFinalPrompt = true;
-            }
+            // ▼▼▼ [수정] Diff를 가져오는 로직을 수정합니다. ▼▼▼
+            string diffContent = await _promptService.GetDiffAsync(SelectedFolder!);
+            
+            // ▼▼▼ [수정] ShowPrompt 메서드를 수정된 시그니처에 맞게 호출하고, diffContent를 전달합니다. ▼▼▼
+            // AI 커밋 프롬프트 생성을 위한 특별한 경우임을 알리는 플래그를 true로 설정합니다.
+            _dialogService.ShowPrompt("AI 커밋 메시지 생성", diffContent, isForCommitAi: true);
+            
+            AddLog("변경점 분석 완료. AI 커밋 메시지 생성 창이 열렸습니다.");
 
             IsBusy = false;
         }
 
         // 2단계 커맨드: 최종 AI 프롬프트 생성
-        // [수정] async/await가 필요 없으므로 제거합니다.
-        [RelayCommand(CanExecute = nameof(CanCreateFinalPrompt))]
-        private void CreateFinalPrompt()
-        {
-            AddLog("AI에게 질문할 최종 프롬프트를 생성합니다...");
-            
-            // [수정] 단순화된 CreateCommitPrompt 메서드를 호출합니다.
-            string finalPrompt = _promptService.CreateCommitPrompt(_currentDiff);
-            
-            _dialogService.ShowPrompt("생성된 AI 질문지 (복사하여 사용)", finalPrompt);
-            AddLog("최종 AI 질문지 생성 완료.");
-
-            // 프롬프트 생성 후에는 다시 비활성화하여 중복 생성을 방지
-            CanCreateFinalPrompt = false;
-        }
-
+        // ▼▼▼ [삭제] CreateFinalPromptAsync 커맨드를 삭제합니다. ▼▼▼
+        
         [RelayCommand]
         private async Task ShowCommitDetailsAsync(CommitInfo? commit)
         {

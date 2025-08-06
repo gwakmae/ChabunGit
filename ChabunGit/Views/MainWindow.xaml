@@ -40,8 +40,8 @@
 
                 <StackPanel Orientation="Horizontal" Margin="0,15,0,0">
                     <Button Content="⬇️ 원격 확인 (Fetch)" Command="{Binding FetchCommand}" Style="{StaticResource MainActionButtonStyle}"/>
-                    <Button Content="⏬ 원격 가져오기 (Pull)" Command="{Binding PullCommand}" Style="{StaticResource MainActionButtonStyle}"/>
-                    <Button Content="⏫ GitHub에 공유 (Push)" Command="{Binding PushCommand}" Style="{StaticResource PrimaryActionButtonStyle}"/>
+                    <Button Content="⤵️ 원격 가져오기 (Pull)" Command="{Binding PullCommand}" Style="{StaticResource MainActionButtonStyle}"/>
+                    <Button Content="✨ GitHub에 공유 (Push)" Command="{Binding PushCommand}" Style="{StaticResource PrimaryActionButtonStyle}"/>
                     <CheckBox IsChecked="{Binding IsForcePushChecked}" Content="강제 푸시" VerticalAlignment="Center" Margin="10,0,0,0"/>
                 </StackPanel>
             </StackPanel>
@@ -77,7 +77,7 @@
                             <Button Content="✨ .gitignore 질문" Command="{Binding GenerateGitignorePromptCommand}" Margin="0,5,0,0"/>
                         </StackPanel>
                     </GroupBox>
-                    <GroupBox Header="변경 파일 목록">
+                    <GroupBox Header="변경된 파일 목록">
                         <ListBox ItemsSource="{Binding ChangedFiles}"/>
                     </GroupBox>
                 </DockPanel>
@@ -88,16 +88,18 @@
                     <GroupBox Header="커밋 메시지 작성" DockPanel.Dock="Top" MinHeight="220" MaxHeight="300">
                         <DockPanel>
                             <TextBlock Text="{Binding TitleCharCountText}" DockPanel.Dock="Top" Margin="2"/>
+                            <!-- ▼▼▼ [수정] 버튼들의 스타일과 이름을 변경하고, AI 프롬프트 생성 버튼을 삭제합니다. ▼▼▼ -->
                             <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5,0,0">
-                                <Button Content="🔍 변경점 분석 (느림)" 
-                                        Command="{Binding AnalyzeChangesCommand}" 
-                                        ToolTip="git diff 결과를 번역하여 아래 로그 창에 표시합니다."/>
-                                <Button Content="✨ AI 프롬프트 생성" 
-                                        Command="{Binding CreateFinalPromptCommand}" 
-                                        Margin="5,0,0,0"
-                                        ToolTip="분석된 결과를 바탕으로 AI에게 질문할 최종 프롬프트를 만듭니다."/>
-                                <Button Content="커밋" Command="{Binding CommitCommand}" FontWeight="Bold" Margin="5,0,0,0"/>
+                                <Button Content="변경점 분석" 
+                                        Command="{Binding AnalyzeChangesCommand}"
+                                        Style="{StaticResource MainActionButtonStyle}"
+                                        ToolTip="git diff 결과를 확인하고 AI에게 질문할 프롬프트를 생성합니다."/>
+                                <Button Content="커밋" 
+                                        Command="{Binding CommitCommand}"
+                                        Style="{StaticResource PrimaryActionButtonStyle}"
+                                        Margin="5,0,0,0"/>
                             </StackPanel>
+                            <!-- ▲▲▲ [수정] 여기까지 ▲▲▲ -->
                             <TextBox Text="{Binding CommitTitle, UpdateSourceTrigger=PropertyChanged}" DockPanel.Dock="Top" Margin="0,5,0,0" MaxLength="50"/>
                             <TextBox Text="{Binding CommitBody, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Margin="0,5,0,0"/>
                         </DockPanel>
