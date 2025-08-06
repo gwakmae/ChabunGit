@@ -8,9 +8,7 @@
         d:DataContext="{d:DesignInstance Type=vm:MainViewModel, IsDesignTimeCreatable=False}"
         Title="ChabunGit" Height="800" Width="1200" MinHeight="700" MinWidth="1000">
 
-    <!-- ▼▼▼ 1. 스타일 리소스를 창 내부에 정의 ▼▼▼ -->
     <Window.Resources>
-        <!-- 기본 액션 버튼을 위한 스타일 -->
         <Style x:Key="MainActionButtonStyle" TargetType="Button">
             <Setter Property="Padding" Value="10,5"/>
             <Setter Property="FontWeight" Value="Bold"/>
@@ -19,7 +17,6 @@
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
 
-        <!-- 강조된 Push 버튼을 위한 스타일 (MainActionButtonStyle 상속) -->
         <Style x:Key="PrimaryActionButtonStyle" TargetType="Button" BasedOn="{StaticResource MainActionButtonStyle}">
             <Setter Property="Background" Value="#4CAF50"/>
             <Setter Property="Foreground" Value="White"/>
@@ -42,7 +39,6 @@
                     <TextBlock Grid.Column="2" Text="{Binding CurrentBranch}" FontWeight="Bold" VerticalAlignment="Center"/>
                 </Grid>
 
-                <!-- ▼▼▼ 2. 버튼에 스타일 적용 및 텍스트 수정 ▼▼▼ -->
                 <StackPanel Orientation="Horizontal" Margin="0,15,0,0">
                     <Button Content="⬇️ 원격 확인 (Fetch)" Command="{Binding FetchCommand}" Style="{StaticResource MainActionButtonStyle}"/>
                     <Button Content="⏬ 원격 가져오기 (Pull)" Command="{Binding PullCommand}" Style="{StaticResource MainActionButtonStyle}"/>
@@ -96,7 +92,13 @@
                         <DockPanel>
                             <TextBlock Text="{Binding TitleCharCountText}" DockPanel.Dock="Top" Margin="2"/>
                             <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5,0,0">
-                                <Button Content="✨ 커밋 메시지 질문" Command="{Binding GenerateCommitPromptCommand}"/>
+                                <Button Content="🔍 변경점 분석 (느림)" 
+                                        Command="{Binding AnalyzeChangesCommand}" 
+                                        ToolTip="git diff 결과를 번역하여 아래 로그 창에 표시합니다."/>
+                                <Button Content="✨ AI 프롬프트 생성" 
+                                        Command="{Binding CreateFinalPromptCommand}" 
+                                        Margin="5,0,0,0"
+                                        ToolTip="분석된 결과를 바탕으로 AI에게 질문할 최종 프롬프트를 만듭니다."/>
                                 <Button Content="커밋" Command="{Binding CommitCommand}" FontWeight="Bold" Margin="5,0,0,0"/>
                             </StackPanel>
                             <TextBox Text="{Binding CommitTitle, UpdateSourceTrigger=PropertyChanged}" DockPanel.Dock="Top" Margin="0,5,0,0" MaxLength="50"/>

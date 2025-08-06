@@ -8,7 +8,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows; // Clipboard 클래스를 사용하기 위해 추가
+using System.Windows;
 
 namespace ChabunGit.ViewModels
 {
@@ -19,47 +19,48 @@ namespace ChabunGit.ViewModels
         private readonly IConfigManager _configManager;
         private readonly IPromptService _promptService;
 
+        private string _originalDiff = string.Empty;
+        private string _translatedDiff = string.Empty;
+
         [ObservableProperty] private bool _isBusy;
         [ObservableProperty] private bool _isNewProjectGuideActive;
         [ObservableProperty] private string? _selectedFolder;
         [ObservableProperty] private string _currentBranch = "현재 브랜치: N/A";
         [ObservableProperty] private string _fetchStatus = "초기화";
-        [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(CommitCommand))] private string _commitTitle = "";
+        [ObservableProperty][NotifyCanExecuteChangedFor(nameof(CommitCommand))] private string _commitTitle = "";
         [ObservableProperty] private string _commitBody = "";
         [ObservableProperty] private string _titleCharCountText = "제목 (50자 제한) : 0/50";
         [ObservableProperty] private bool _isForcePushChecked;
+
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(CopyLogCommand))]
         private string _logText = "";
-        [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(ResetToCommitCommand))] private CommitInfo? _selectedCommit;
+
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(ResetToCommitCommand))]
+        private CommitInfo? _selectedCommit;
 
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(AddRemoteCommand))]
         private string _newProjectGitHubUrl = "";
 
         [ObservableProperty]
-        [NotifyCanExecuteChangedFor(nameof(FetchCommand))]
-        [NotifyCanExecuteChangedFor(nameof(PullCommand))]
-        [NotifyCanExecuteChangedFor(nameof(PushCommand))]
-        [NotifyCanExecuteChangedFor(nameof(CommitCommand))]
-        [NotifyCanExecuteChangedFor(nameof(GenerateCommitPromptCommand))]
-        [NotifyCanExecuteChangedFor(nameof(UndoLastCommitCommand))]
-        [NotifyCanExecuteChangedFor(nameof(ResetToCommitCommand))]
-        [NotifyCanExecuteChangedFor(nameof(EditGitignoreCommand))]
-        [NotifyCanExecuteChangedFor(nameof(GenerateGitignorePromptCommand))]
+        [NotifyCanExecuteChangedFor(nameof(FetchCommand), nameof(PushCommand), nameof(CommitCommand), nameof(UndoLastCommitCommand), nameof(ResetToCommitCommand), nameof(EditGitignoreCommand), nameof(GenerateGitignorePromptCommand), nameof(AnalyzeChangesCommand))]
         private bool _isRepoValid;
 
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(PullCommand))]
         private bool _canPull;
 
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(CreateFinalPromptCommand))]
+        private bool _canCreateFinalPrompt;
+
         public ObservableCollection<string> ChangedFiles { get; } = new();
         public ObservableCollection<CommitInfo> CommitHistory { get; } = new();
-        
-        // UndoLastCommitCommand를 위한 CanExecute 프로퍼티
+
         public bool CanUndoLastCommit => IsRepoValid && CommitHistory.Any();
 
-        // '새 프로젝트 가이드'의 단계별 활성화 상태를 제어하는 프로퍼티
         [ObservableProperty] private bool _guideCanInit = true;
         [ObservableProperty] private bool _guideCanAddRemote;
         [ObservableProperty] private bool _guideCanComplete;
@@ -70,8 +71,7 @@ namespace ChabunGit.ViewModels
             _dialogService = dialogService;
             _configManager = configManager;
             _promptService = promptService;
-            
-            // 컬렉션이 변경될 때마다 CanExecute 상태를 갱신하도록 설정
+
             CommitHistory.CollectionChanged += (s, e) => OnPropertyChanged(nameof(CanUndoLastCommit));
         }
 
@@ -97,7 +97,6 @@ namespace ChabunGit.ViewModels
             else
             {
                 IsNewProjectGuideActive = true;
-                // 가이드 UI 상태 초기화
                 GuideCanInit = true;
                 GuideCanAddRemote = false;
                 GuideCanComplete = false;
@@ -128,7 +127,7 @@ namespace ChabunGit.ViewModels
             CommitHistory.Clear();
             historyResult.ForEach(c => CommitHistory.Add(c));
 
-            CanPull = false; // 정보 갱신 시 Pull 가능 상태 초기화
+            CanPull = false;
             FetchStatus = "원격 저장소 상태를 확인하려면 [Fetch] 버튼을 누르세요.";
             IsBusy = false;
             AddLog("정보 갱신 완료.");
@@ -159,7 +158,7 @@ namespace ChabunGit.ViewModels
         private async Task FetchAsync()
         {
             IsBusy = true;
-            CanPull = false; // Fetch 시작 시 우선 비활성화
+            CanPull = false;
             AddLog("원격 저장소 확인 중 (Fetch)...");
 
             var fetchResult = await _gitService.FetchAsync(SelectedFolder!);
@@ -171,7 +170,7 @@ namespace ChabunGit.ViewModels
             if (status.Contains("behind"))
             {
                 FetchStatus = "⚠️ 경고: 팀원이 올린 새로운 내용이 있습니다. Pull 하세요.";
-                CanPull = true; // Pull이 필요한 상태이므로 활성화
+                CanPull = true;
             }
             else if (status.Contains("ahead")) FetchStatus = "✅ 원격 저장소보다 앞서 있습니다. Push 하세요.";
             else if (status.Contains("up-to-date") || !status.Contains("origin")) FetchStatus = "✅ 원격 저장소와 동기화됨.";
@@ -258,23 +257,6 @@ namespace ChabunGit.ViewModels
             IsBusy = false;
         }
 
-        [RelayCommand(CanExecute = nameof(IsRepoValid))]
-        private async Task GenerateCommitPromptAsync()
-        {
-            IsBusy = true;
-            AddLog("AI 질문지를 만드는 중...");
-
-            string prompt = CommitHistory.Any()
-                ? await _promptService.CreateCommitMessagePromptAsync(SelectedFolder!)
-                : await _promptService.CreateInitialCommitPromptAsync(SelectedFolder!);
-
-            string formTitle = CommitHistory.Any() ? "변경 사항 커밋 메시지 질문지 생성" : "첫 커밋 메시지 질문지 생성";
-
-            IsBusy = false;
-            AddLog("AI 질문지 생성 완료.");
-            _dialogService.ShowPrompt(formTitle, prompt);
-        }
-
         [RelayCommand(CanExecute = nameof(CanUndoLastCommit))]
         private async Task UndoLastCommitAsync()
         {
@@ -337,11 +319,11 @@ namespace ChabunGit.ViewModels
             AddLog("Git 저장소 초기화 중...");
             var result = await _gitService.InitRepositoryAsync(SelectedFolder);
             AddLog(result.Output + result.Error);
-            
+
             if (result.ExitCode == 0)
             {
                 AddLog("✅ Git 저장소 초기화 성공!");
-                IsRepoValid = true; // 이제 유효한 저장소
+                IsRepoValid = true;
                 GuideCanInit = false;
                 GuideCanAddRemote = true;
             }
@@ -362,9 +344,9 @@ namespace ChabunGit.ViewModels
             if (result.ExitCode == 0)
             {
                 _dialogService.ShowMessage("원격 저장소가 성공적으로 연결되었습니다.", "성공");
-                NewProjectGitHubUrl = ""; // 입력 필드 초기화
-                GuideCanAddRemote = false; // 원격 추가 비활성화
-                GuideCanComplete = true;   // 완료 버튼 활성화
+                NewProjectGitHubUrl = "";
+                GuideCanAddRemote = false;
+                GuideCanComplete = true;
             }
             IsBusy = false;
         }
@@ -376,14 +358,13 @@ namespace ChabunGit.ViewModels
             IsBusy = true;
             AddLog("주 브랜치를 'main'으로 설정 중...");
             await _gitService.SetMainBranchAsync(SelectedFolder);
-            
-            IsNewProjectGuideActive = false; // 가이드 종료
-            
+
+            IsNewProjectGuideActive = false;
+
             await RefreshRepositoryInfoAsync();
             IsBusy = false;
         }
 
-        // 로그 복사 커맨드의 활성화 조건을 정의하는 메서드
         private bool CanCopyLog() => !string.IsNullOrWhiteSpace(LogText);
 
         [RelayCommand(CanExecute = nameof(CanCopyLog))]
@@ -391,6 +372,46 @@ namespace ChabunGit.ViewModels
         {
             Clipboard.SetText(LogText);
             AddLog("✅ 로그 내용이 클립보드에 복사되었습니다.");
+        }
+
+        // 1단계 커맨드: 변경점 분석 및 번역 (수정됨)
+        [RelayCommand(CanExecute = nameof(IsRepoValid))]
+        private async Task AnalyzeChangesAsync()
+        {
+            IsBusy = true;
+            CanCreateFinalPrompt = false;
+            AddLog("변경점 분석 및 번역을 시작합니다 (시간이 걸릴 수 있습니다)...");
+
+            var diffResult = await _gitService.Executor.ExecuteAsync(SelectedFolder!, "diff HEAD");
+            _originalDiff = diffResult.Output;
+
+            // 번역된 diff 가져오기
+            _translatedDiff = await _promptService.GetTranslatedDiffAsync(SelectedFolder!);
+
+            // 수정: 로그가 아닌 새 창으로 결과 표시
+            _dialogService.ShowPrompt("변경점 분석 결과 (번역됨)", _translatedDiff);
+
+            AddLog("변경점 분석 및 번역 완료."); // 로그에는 간단한 완료 메시지만 남김
+
+            // 변경 사항이 있을 때만 2단계 버튼 활성화
+            if (!string.IsNullOrWhiteSpace(_originalDiff))
+            {
+                CanCreateFinalPrompt = true;
+            }
+
+            IsBusy = false;
+        }
+
+        // 2단계 커맨드: 최종 AI 프롬프트 생성 (변경 없음)
+        [RelayCommand(CanExecute = nameof(CanCreateFinalPrompt))]
+        private void CreateFinalPrompt()
+        {
+            AddLog("AI에게 질문할 최종 프롬프트를 생성합니다...");
+            string finalPrompt = _promptService.CreateFinalPromptFromDiffs(_originalDiff, _translatedDiff);
+            _dialogService.ShowPrompt("생성된 AI 질문지 (복사하여 사용)", finalPrompt);
+
+            // 프롬프트 생성 후에는 다시 비활성화하여 중복 생성을 방지
+            CanCreateFinalPrompt = false;
         }
     }
 }
