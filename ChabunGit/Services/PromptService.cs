@@ -5,9 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
+// ▼▼▼ [수정] 아래 using 문들은 더 이상 필요 없으므로 삭제합니다 ▼▼▼
+// using System.Net.Http;
 using System.Text;
-using System.Text.Json;
+// using System.Text.Json;
+// ▲▲▲ [수정] 여기까지 ▲▲▲
 using System.Threading.Tasks;
 
 namespace ChabunGit.Services
@@ -15,13 +17,15 @@ namespace ChabunGit.Services
     public class PromptService : IPromptService
     {
         private readonly GitCommandExecutor _executor;
-        private static readonly HttpClient _httpClient = new HttpClient();
+        // ▼▼▼ [수정] HttpClient 필드를 삭제합니다 ▼▼▼
+        // private static readonly HttpClient _httpClient = new HttpClient();
 
         public PromptService(GitCommandExecutor executor)
         {
             _executor = executor;
         }
 
+        // CreateInitialCommitPromptAsync, CreateGitignorePromptAsync 메서드는 그대로 유지합니다.
         public async Task<string> CreateInitialCommitPromptAsync(string repoPath)
         {
             var promptBuilder = new StringBuilder();
@@ -95,8 +99,10 @@ namespace ChabunGit.Services
             return Task.FromResult(promptBuilder.ToString());
         }
 
-        // 1단계: 번역된 diff만 반환하는 메서드
-        public async Task<string> GetTranslatedDiffAsync(string repoPath)
+        // ▼▼▼ [수정] 아래 로직 전체를 새로운 단순한 코드로 대체합니다 ▼▼▼
+
+        // 1. GetDiffAsync: 번역 없이 순수하게 diff 결과만 가져옵니다.
+        public async Task<string> GetDiffAsync(string repoPath)
         {
             var diffResult = await _executor.ExecuteAsync(repoPath, "diff HEAD");
 
@@ -104,14 +110,13 @@ namespace ChabunGit.Services
             {
                 return "커밋할 변경 사항이 없습니다.";
             }
-
-            return await TranslateGitDiffWithHTTP(diffResult.Output);
+            // Git이 올바른 UTF-8 결과물을 주므로, 그대로 반환하면 됩니다.
+            return diffResult.Output;
         }
 
-        // 2단계: diff들을 받아 최종 AI 프롬프트를 만드는 메서드 (수정됨)
-        public string CreateFinalPromptFromDiffs(string originalDiff, string translatedDiff)
+        // 2. CreateCommitPrompt: diff 내용을 받아 AI 프롬프트를 생성합니다.
+        public string CreateCommitPrompt(string diffContent)
         {
-            // ★★★ GitDiffPromptGenerator의 프롬프트 형식과 100% 동일하게 수정 ★★★
             return
 $@"아래는 'git diff' 결과입니다. 이 변경 사항에 대한 커밋 메시지를 다음 규칙에 따라 영어로 작성해 주세요.
 
@@ -140,98 +145,13 @@ git commit -m ""feat: Implement user authentication endpoint
 
 diff 내용:
 ------------------------
-{translatedDiff}
+{diffContent}
 ";
         }
 
+        // 3. 기존의 번역 관련 #region은 모두 삭제합니다.
+        // #region Private Translation Helpers ... #endregion 전체 삭제
 
-        #region Private Translation Helpers
-        private async Task<string> TranslateTextWithHTTP(string text)
-        {
-            try
-            {
-                var requestData = new
-                {
-                    q = text,
-                    source = "en",
-                    target = "ko",
-                    format = "text"
-                };
-
-                string jsonContent = JsonSerializer.Serialize(requestData);
-                var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
-
-                var response = await _httpClient.PostAsync("https://libretranslate.de/translate", content);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    string responseText = await response.Content.ReadAsStringAsync();
-                    var responseObj = JsonSerializer.Deserialize<JsonElement>(responseText);
-
-                    if (responseObj.TryGetProperty("translatedText", out JsonElement translatedElement))
-                    {
-                        return translatedElement.GetString() ?? text;
-                    }
-                }
-                return text;
-            }
-            catch
-            {
-                return text;
-            }
-        }
-
-        private bool ContainsEnglishText(string text)
-        {
-            return text.Length > 5 &&
-                       text.Any(c => char.IsLetter(c)) &&
-                       text.Any(c => c >= 'A' && c <= 'z') &&
-                       !text.StartsWith("diff --git") &&
-                       !text.StartsWith("index ") &&
-                       !text.StartsWith("@@");
-        }
-
-        private async Task<string> TranslateGitDiffWithHTTP(string englishDiff)
-        {
-            var result = new StringBuilder();
-            result.AppendLine("=== Git Diff 결과 (번역됨) ===");
-            result.AppendLine();
-
-            var lines = englishDiff.Split('\n');
-
-            foreach (var line in lines.Take(50))
-            {
-                if (string.IsNullOrWhiteSpace(line)) continue;
-
-                string trimmedLine = line.Trim();
-                string translatedLine = trimmedLine;
-
-                if (trimmedLine.StartsWith("diff --git"))
-                {
-                    translatedLine = $"파일 비교: {trimmedLine.Substring(11)}";
-                }
-                else if (trimmedLine.StartsWith("--- "))
-                {
-                    translatedLine = $"이전 파일: {trimmedLine.Substring(4)}";
-                }
-                else if (trimmedLine.StartsWith("+++ "))
-                {
-                    translatedLine = $"새 파일: {trimmedLine.Substring(4)}";
-                }
-                else if (trimmedLine.StartsWith("@@"))
-                {
-                    translatedLine = $"변경 위치: {trimmedLine}";
-                }
-                else if (ContainsEnglishText(trimmedLine))
-                {
-                    translatedLine = await TranslateTextWithHTTP(trimmedLine);
-                }
-
-                result.AppendLine(translatedLine);
-            }
-
-            return result.ToString();
-        }
-        #endregion
+        // ▲▲▲ [수정] 여기까지 ▲▲▲
     }
 }

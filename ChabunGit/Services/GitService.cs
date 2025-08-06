@@ -51,14 +51,17 @@ namespace ChabunGit.Services
 
         public async Task<GitCommandExecutor.ProcessResult> CommitAsync(string repoPath, string title, string body)
         {
-            var commandBuilder = new StringBuilder();
-            commandBuilder.Append($"commit -m \"{title.Trim()}\"");
-            var bodyLines = body.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            foreach (var line in bodyLines)
-            {
-                commandBuilder.Append($" -m \"{line.Trim()}\"");
-            }
-            return await Executor.ExecuteAsync(repoPath, commandBuilder.ToString());
+            // 1. 제목과 본문을 하나의 문자열로 합칩니다.
+            //    제목과 본문 사이에는 두 번의 줄바꿈(공백 라인)을 넣어 문단을 구분합니다.
+            string fullMessage = $"{title.Trim()}\n\n{body.Trim()}";
+
+            // 2. 이스케이프 처리가 필요한 문자를 처리합니다. (특히 따옴표)
+            string escapedMessage = fullMessage.Replace("\"", "\\\"");
+
+            // 3. 단 하나의 -m 플래그를 사용하여 전체 메시지를 전달합니다.
+            string command = $"commit -m \"{escapedMessage}\"";
+            
+            return await Executor.ExecuteAsync(repoPath, command);
         }
 
         public async Task<GitCommandExecutor.ProcessResult> FetchAsync(string repoPath) => await Executor.ExecuteAsync(repoPath, "fetch");
@@ -74,5 +77,48 @@ namespace ChabunGit.Services
 
         public async Task<GitCommandExecutor.ProcessResult> ResetLastCommitAsync(string repoPath) => await Executor.ExecuteAsync(repoPath, "reset --soft HEAD~1");
         public async Task<GitCommandExecutor.ProcessResult> ResetToCommitAsync(string repoPath, string commitHash) => await Executor.ExecuteAsync(repoPath, $"reset --hard {commitHash}");
+
+        public async Task<GitCommandExecutor.ProcessResult> GetCommitDetailsAsync(string repoPath, string commitHash)
+        {
+            return await Executor.ExecuteAsync(repoPath, $"show --stat --pretty=fuller {commitHash}");
+        }
+
+        // ▼▼▼ 아래 메서드 전체 추가 ▼▼▼
+        public async Task EnsureUtf8ConfigAsync(string repoPath)
+        {
+            try
+            {
+                string configPath = Path.Combine(repoPath, ".git", "config");
+
+                // .git/config 파일이 존재하는지 확인
+                if (!File.Exists(configPath))
+                {
+                    return; // 파일이 없으면 아무것도 하지 않음
+                }
+
+                string content = await File.ReadAllTextAsync(configPath, Encoding.UTF8);
+
+                // 이미 설정이 있는지 간단하게 확인
+                if (content.Contains("logoutputencoding") || content.Contains("[i18n]"))
+                {
+                    return; // 설정이 이미 있으면 아무것도 하지 않음
+                }
+
+                // 추가할 설정 텍스트 생성
+                var settingBuilder = new StringBuilder();
+                settingBuilder.AppendLine(); // 기존 내용과 한 줄 띄움
+                settingBuilder.AppendLine("[i18n]");
+                settingBuilder.AppendLine("\tcommitEncoding = utf-8");
+                settingBuilder.AppendLine("\tlogOutputEncoding = utf-8");
+
+                // 파일 끝에 설정 추가
+                await File.AppendAllTextAsync(configPath, settingBuilder.ToString(), Encoding.UTF8);
+            }
+            catch (Exception)
+            {
+                // 오류가 발생하더라도 프로그램이 멈추지 않도록 처리
+                // (예: 권한 문제 등)
+            }
+        }
     }
 }

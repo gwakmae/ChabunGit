@@ -19,8 +19,8 @@ namespace ChabunGit.ViewModels
         private readonly IConfigManager _configManager;
         private readonly IPromptService _promptService;
 
-        private string _originalDiff = string.Empty;
-        private string _translatedDiff = string.Empty;
+        // ▼▼▼ [수정] _originalDiff, _translatedDiff 필드를 하나로 통합합니다 ▼▼▼
+        private string _currentDiff = string.Empty;
 
         [ObservableProperty] private bool _isBusy;
         [ObservableProperty] private bool _isNewProjectGuideActive;
@@ -91,6 +91,10 @@ namespace ChabunGit.ViewModels
 
             if (_gitService.IsGitRepository(folderPath))
             {
+                // ▼▼▼ 여기에 호출 코드 추가 ▼▼▼
+                // 폴더를 선택했을 때 Git 저장소라면, 인코딩 설정을 검사하고 보장합니다.
+                await _gitService.EnsureUtf8ConfigAsync(folderPath);
+
                 IsNewProjectGuideActive = false;
                 await RefreshRepositoryInfoAsync();
             }
@@ -322,6 +326,8 @@ namespace ChabunGit.ViewModels
 
             if (result.ExitCode == 0)
             {
+                await _gitService.EnsureUtf8ConfigAsync(SelectedFolder);
+
                 AddLog("✅ Git 저장소 초기화 성공!");
                 IsRepoValid = true;
                 GuideCanInit = false;
@@ -374,27 +380,23 @@ namespace ChabunGit.ViewModels
             AddLog("✅ 로그 내용이 클립보드에 복사되었습니다.");
         }
 
-        // 1단계 커맨드: 변경점 분석 및 번역 (수정됨)
+        // 1단계 커맨드: 변경점 분석
         [RelayCommand(CanExecute = nameof(IsRepoValid))]
         private async Task AnalyzeChangesAsync()
         {
             IsBusy = true;
             CanCreateFinalPrompt = false;
-            AddLog("변경점 분석 및 번역을 시작합니다 (시간이 걸릴 수 있습니다)...");
+            AddLog("변경점 분석을 시작합니다...");
 
-            var diffResult = await _gitService.Executor.ExecuteAsync(SelectedFolder!, "diff HEAD");
-            _originalDiff = diffResult.Output;
+            // [수정] 단순화된 GetDiffAsync 메서드를 호출합니다.
+            _currentDiff = await _promptService.GetDiffAsync(SelectedFolder!);
 
-            // 번역된 diff 가져오기
-            _translatedDiff = await _promptService.GetTranslatedDiffAsync(SelectedFolder!);
-
-            // 수정: 로그가 아닌 새 창으로 결과 표시
-            _dialogService.ShowPrompt("변경점 분석 결과 (번역됨)", _translatedDiff);
-
-            AddLog("변경점 분석 및 번역 완료."); // 로그에는 간단한 완료 메시지만 남김
+            // [수정] 번역 과정이 없으므로, 창 제목도 단순하게 변경합니다.
+            _dialogService.ShowPrompt("변경점 분석 결과", _currentDiff);
+            AddLog("변경점 분석 완료.");
 
             // 변경 사항이 있을 때만 2단계 버튼 활성화
-            if (!string.IsNullOrWhiteSpace(_originalDiff))
+            if (_currentDiff != "커밋할 변경 사항이 없습니다.")
             {
                 CanCreateFinalPrompt = true;
             }
@@ -402,16 +404,45 @@ namespace ChabunGit.ViewModels
             IsBusy = false;
         }
 
-        // 2단계 커맨드: 최종 AI 프롬프트 생성 (변경 없음)
+        // 2단계 커맨드: 최종 AI 프롬프트 생성
+        // [수정] async/await가 필요 없으므로 제거합니다.
         [RelayCommand(CanExecute = nameof(CanCreateFinalPrompt))]
         private void CreateFinalPrompt()
         {
             AddLog("AI에게 질문할 최종 프롬프트를 생성합니다...");
-            string finalPrompt = _promptService.CreateFinalPromptFromDiffs(_originalDiff, _translatedDiff);
+            
+            // [수정] 단순화된 CreateCommitPrompt 메서드를 호출합니다.
+            string finalPrompt = _promptService.CreateCommitPrompt(_currentDiff);
+            
             _dialogService.ShowPrompt("생성된 AI 질문지 (복사하여 사용)", finalPrompt);
+            AddLog("최종 AI 질문지 생성 완료.");
 
             // 프롬프트 생성 후에는 다시 비활성화하여 중복 생성을 방지
             CanCreateFinalPrompt = false;
+        }
+
+        [RelayCommand]
+        private async Task ShowCommitDetailsAsync(CommitInfo? commit)
+        {
+            if (commit == null || string.IsNullOrEmpty(SelectedFolder)) return;
+
+            IsBusy = true;
+            AddLog($"커밋 상세 정보 조회 중: {commit.ShortHash}");
+
+            var result = await _gitService.GetCommitDetailsAsync(SelectedFolder, commit.Hash);
+
+            if (result.ExitCode == 0)
+            {
+                _dialogService.ShowCommitDetails(commit.ShortHash, result.Output);
+                AddLog("커밋 상세 정보 표시 완료.");
+            }
+            else
+            {
+                _dialogService.ShowMessage($"커밋 정보를 가져오는 중 오류가 발생했습니다:\n{result.Error}", "오류");
+                AddLog($"커밋 정보 조회 실패: {result.Error}");
+            }
+
+            IsBusy = false;
         }
     }
 }

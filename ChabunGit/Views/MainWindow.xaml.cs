@@ -1,7 +1,9 @@
 // File: ChabunGit/Views/MainWindow.xaml.cs
+using ChabunGit.Models;
 using ChabunGit.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ChabunGit.Views
 {
@@ -19,6 +21,21 @@ namespace ChabunGit.Views
             if (sender is TextBox textBox)
             {
                 textBox.ScrollToEnd();
+            }
+        }
+
+        private void CommitListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is ListBox listBox && listBox.SelectedItem is CommitInfo selectedCommit)
+            {
+                if (DataContext is MainViewModel viewModel)
+                {
+                    // ShowCommitDetailsCommand를 직접 실행
+                    if (viewModel.ShowCommitDetailsCommand.CanExecute(selectedCommit))
+                    {
+                        viewModel.ShowCommitDetailsCommand.Execute(selectedCommit);
+                    }
+                }
             }
         }
     }

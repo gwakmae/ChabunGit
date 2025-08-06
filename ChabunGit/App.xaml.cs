@@ -40,6 +40,7 @@ namespace ChabunGit
             services.AddSingleton<MainViewModel>();
             services.AddTransient<GitignoreEditViewModel>();
             services.AddTransient<PromptDisplayViewModel>();
+            services.AddTransient<CommitDetailViewModel>(); // 추가된 라인
 
             // Views
             services.AddSingleton(s => new MainWindow(s.GetRequiredService<MainViewModel>()));

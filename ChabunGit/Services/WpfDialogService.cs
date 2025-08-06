@@ -52,5 +52,15 @@ namespace ChabunGit.Services
             }
             return null;
         }
+
+        public void ShowCommitDetails(string commitHash, string commitDetails)
+        {
+            var detailView = new CommitDetailView
+            {
+                Owner = Application.Current.MainWindow,
+                DataContext = new CommitDetailViewModel(commitHash, commitDetails)
+            };
+            detailView.ShowDialog();
+        }
     }
 }

@@ -8,5 +8,7 @@ namespace ChabunGit.Services.Abstractions
         bool ShowConfirmation(string message, string caption);
         void ShowPrompt(string title, string promptText);
         string? ShowGitignoreEditor(string initialContent);
+        void ShowCommitDetails(string commitHash, string commitDetails);
+
     }
 }

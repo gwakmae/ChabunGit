@@ -7,8 +7,7 @@ namespace ChabunGit.Services.Abstractions
         Task<string> CreateInitialCommitPromptAsync(string repoPath);
         Task<string> CreateGitignorePromptAsync(string repoPath);
 
-        // 2단계 워크플로우를 위한 새로운 메서드 시그니처
-        Task<string> GetTranslatedDiffAsync(string repoPath);
-        string CreateFinalPromptFromDiffs(string originalDiff, string translatedDiff);
+         Task<string> GetDiffAsync(string repoPath);
+        string CreateCommitPrompt(string diffContent);
     }
 }
