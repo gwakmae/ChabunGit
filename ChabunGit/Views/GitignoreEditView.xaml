@@ -1,0 +1,18 @@
+<!-- File: ChabunGit/Views/GitignoreEditView.xaml -->
+<Window x:Class="ChabunGit.Views.GitignoreEditView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:ChabunGit.ViewModels"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:GitignoreEditViewModel}"
+        Title=".gitignore 편집" Height="450" Width="600" ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
+    <DockPanel Margin="10">
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="저장" IsDefault="True" Click="Save_Click" MinWidth="80"/>
+            <Button Content="취소" IsCancel="True" MinWidth="80" Margin="5,0,0,0"/>
+        </StackPanel>
+        <TextBox Text="{Binding Content, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" FontFamily="Consolas"/>
+    </DockPanel>
+</Window>

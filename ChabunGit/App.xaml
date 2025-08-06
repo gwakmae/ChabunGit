@@ -1,9 +1,12 @@
 ﻿<Application x:Class="ChabunGit.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:ChabunGit"
-             StartupUri="MainWindow.xaml">
+             xmlns:local="clr-namespace:ChabunGit">
+            
     <Application.Resources>
-         
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+
+        <!-- IsEnabled 바인딩을 위한 Boolean Inverter 추가 -->
+        <local:BooleanInverterConverter x:Key="BooleanInverterConverter"/>
     </Application.Resources>
 </Application>
