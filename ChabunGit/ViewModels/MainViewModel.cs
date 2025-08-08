@@ -1,5 +1,5 @@
 ﻿// File: ChabunGit/ViewModels/MainViewModel.cs
-using ChabunGit.Core; // [수정] GitCommandExecutor를 사용하기 위해 네임스페이스를 추가합니다.
+using ChabunGit.Core;
 using ChabunGit.Models;
 using ChabunGit.Services.Abstractions;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -19,12 +19,13 @@ namespace ChabunGit.ViewModels
         private readonly IDialogService _dialogService;
         private readonly IConfigManager _configManager;
         private readonly IPromptService _promptService;
-        
+
         // ▼▼▼ [삭제] _currentDiff 필드는 더 이상 필요하지 않습니다. ▼▼▼
         // private string _currentDiff = string.Empty;
 
         [ObservableProperty] private bool _isBusy;
         [ObservableProperty] private bool _isNewProjectGuideActive;
+        [ObservableProperty] private bool _isLocalRepoWithoutRemote;
         [ObservableProperty] private string? _selectedFolder;
         [ObservableProperty] private string _currentBranch = "현재 브랜치: N/A";
         [ObservableProperty] private string _fetchStatus = "초기화";
@@ -74,7 +75,7 @@ namespace ChabunGit.ViewModels
             _dialogService = dialogService;
             _configManager = configManager;
             _promptService = promptService;
-            
+
             gitCommandExecutor.OnCommandExecuting += command => AddLog($"▶️ {command}");
 
             CommitHistory.CollectionChanged += (s, e) => OnPropertyChanged(nameof(CanUndoLastCommit));
@@ -122,6 +123,12 @@ namespace ChabunGit.ViewModels
 
             IsBusy = true;
             AddLog("저장소 정보를 갱신합니다...");
+
+            IsLocalRepoWithoutRemote = !await _gitService.HasRemoteAsync(SelectedFolder!);
+            if (IsLocalRepoWithoutRemote)
+            {
+                AddLog("⚠️ 원격 저장소가 연결되지 않았습니다. 연결을 진행해주세요.");
+            }
 
             var branchResult = await _gitService.Executor.ExecuteAsync(SelectedFolder!, "rev-parse --abbrev-ref HEAD");
             CurrentBranch = branchResult.ExitCode == 0 ? $"현재 브랜치: {branchResult.Output.Trim()}" : "현재 브랜치: N/A";
@@ -340,7 +347,15 @@ namespace ChabunGit.ViewModels
             IsBusy = false;
         }
 
-        private bool CanAddRemote() => GuideCanAddRemote && !string.IsNullOrWhiteSpace(NewProjectGitHubUrl);
+        // ▼▼▼ [수정] 이 메서드를 아래와 같이 수정합니다. ▼▼▼
+        private bool CanAddRemote()
+        {
+            // URL이 입력되어 있고,
+            // (A) "새 프로젝트 가이드"의 원격 연결 단계이거나 
+            // (B) "원격 없는 로컬 저장소" 상태일 때 버튼을 활성화합니다.
+            bool hasUrl = !string.IsNullOrWhiteSpace(NewProjectGitHubUrl);
+            return hasUrl && (GuideCanAddRemote || IsLocalRepoWithoutRemote);
+        }
 
         [RelayCommand(CanExecute = nameof(CanAddRemote))]
         private async Task AddRemoteAsync()
@@ -355,6 +370,9 @@ namespace ChabunGit.ViewModels
             {
                 _dialogService.ShowMessage("원격 저장소가 성공적으로 연결되었습니다.", "성공");
                 NewProjectGitHubUrl = "";
+
+                // ▼▼▼ [수정] 원격 연결 완료 후 상태를 갱신합니다. ▼▼▼
+                IsLocalRepoWithoutRemote = false; // 원격 연결 UI를 숨깁니다.
                 GuideCanAddRemote = false;
                 GuideCanComplete = true;
             }
@@ -394,11 +412,11 @@ namespace ChabunGit.ViewModels
 
             // ▼▼▼ [수정] Diff를 가져오는 로직을 수정합니다. ▼▼▼
             string diffContent = await _promptService.GetDiffAsync(SelectedFolder!);
-            
+
             // ▼▼▼ [수정] ShowPrompt 메서드를 수정된 시그니처에 맞게 호출하고, diffContent를 전달합니다. ▼▼▼
             // AI 커밋 프롬프트 생성을 위한 특별한 경우임을 알리는 플래그를 true로 설정합니다.
             _dialogService.ShowPrompt("AI 커밋 메시지 생성", diffContent, isForCommitAi: true);
-            
+
             AddLog("변경점 분석 완료. AI 커밋 메시지 생성 창이 열렸습니다.");
 
             IsBusy = false;
@@ -406,7 +424,7 @@ namespace ChabunGit.ViewModels
 
         // 2단계 커맨드: 최종 AI 프롬프트 생성
         // ▼▼▼ [삭제] CreateFinalPromptAsync 커맨드를 삭제합니다. ▼▼▼
-        
+
         [RelayCommand]
         private async Task ShowCommitDetailsAsync(CommitInfo? commit)
         {

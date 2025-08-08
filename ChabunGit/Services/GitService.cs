@@ -83,7 +83,15 @@ namespace ChabunGit.Services
             return await Executor.ExecuteAsync(repoPath, $"show --stat --pretty=fuller {commitHash}");
         }
 
-        // ▼▼▼ 아래 메서드 전체 추가 ▼▼▼
+        public async Task<bool> HasRemoteAsync(string repoPath)
+        {
+            // "git remote" 명령어는 설정된 원격 저장소가 있으면 그 이름을 출력하고, 없으면 아무것도 출력하지 않습니다.
+            var result = await Executor.ExecuteAsync(repoPath, "remote");
+            
+            // 결과의 ExitCode가 0이고, 표준 출력이 비어있지 않다면 원격 저장소가 존재하는 것입니다.
+            return result.ExitCode == 0 && !string.IsNullOrWhiteSpace(result.Output);
+        }
+
         public async Task EnsureUtf8ConfigAsync(string repoPath)
         {
             try

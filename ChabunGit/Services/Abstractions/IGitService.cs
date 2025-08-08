@@ -24,5 +24,6 @@ namespace ChabunGit.Services.Abstractions
         Task<GitCommandExecutor.ProcessResult> ResetToCommitAsync(string repoPath, string commitHash);
         Task<GitCommandExecutor.ProcessResult> GetCommitDetailsAsync(string repoPath, string commitHash);
         Task EnsureUtf8ConfigAsync(string repoPath);
+        Task<bool> HasRemoteAsync(string repoPath);
     }
 }

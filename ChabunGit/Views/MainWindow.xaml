@@ -46,6 +46,25 @@
                 </StackPanel>
             </StackPanel>
 
+            <Border DockPanel.Dock="Top"
+                    Margin="0,15,0,0"
+                    Padding="10"
+                    BorderBrush="Orange"
+                    BorderThickness="2"
+                    CornerRadius="5"
+                    Visibility="{Binding IsLocalRepoWithoutRemote, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}">
+                <GroupBox Header="⚠️ 원격 저장소 연결 필요" FontWeight="Bold">
+                    <StackPanel>
+                        <TextBlock Text="이 로컬 저장소는 GitHub와 같은 원격 저장소에 연결되지 않았습니다. 새로 만든 빈 저장소의 HTTPS 주소를 입력하고 연결하세요." TextWrapping="Wrap"/>
+                        <TextBox Margin="0,5,0,0" Text="{Binding NewProjectGitHubUrl, UpdateSourceTrigger=PropertyChanged}" ToolTip="예: https://github.com/user/repo.git"/>
+                        <Button Content="원격 저장소 연결"
+                                Command="{Binding AddRemoteCommand}"
+                                HorizontalAlignment="Left"
+                                Margin="0,5,0,0"/>
+                    </StackPanel>
+                </GroupBox>
+            </Border>
+
             <StatusBar DockPanel.Dock="Bottom" Margin="0,10,0,0">
                 <StatusBarItem>
                     <TextBlock Text="{Binding FetchStatus}"/>
@@ -54,11 +73,11 @@
             <GroupBox DockPanel.Dock="Bottom" Header="명령어 로그" Height="150" Margin="0,5,0,0">
                 <DockPanel>
                     <Button DockPanel.Dock="Bottom" Content="로그 복사" Command="{Binding CopyLogCommand}" Margin="0,5,0,0"/>
-                    <TextBox x:Name="LogTextBox" 
-                             Text="{Binding LogText, Mode=OneWay}" 
-                             IsReadOnly="True" 
-                             TextWrapping="Wrap" 
-                             VerticalScrollBarVisibility="Auto" 
+                    <TextBox x:Name="LogTextBox"
+                             Text="{Binding LogText, Mode=OneWay}"
+                             IsReadOnly="True"
+                             TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto"
                              TextChanged="LogTextBox_TextChanged"/>
                 </DockPanel>
             </GroupBox>
@@ -88,18 +107,16 @@
                     <GroupBox Header="커밋 메시지 작성" DockPanel.Dock="Top" MinHeight="220" MaxHeight="300">
                         <DockPanel>
                             <TextBlock Text="{Binding TitleCharCountText}" DockPanel.Dock="Top" Margin="2"/>
-                            <!-- ▼▼▼ [수정] 버튼들의 스타일과 이름을 변경하고, AI 프롬프트 생성 버튼을 삭제합니다. ▼▼▼ -->
                             <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5,0,0">
-                                <Button Content="변경점 분석" 
+                                <Button Content="변경점 분석"
                                         Command="{Binding AnalyzeChangesCommand}"
                                         Style="{StaticResource MainActionButtonStyle}"
                                         ToolTip="git diff 결과를 확인하고 AI에게 질문할 프롬프트를 생성합니다."/>
-                                <Button Content="커밋" 
+                                <Button Content="커밋"
                                         Command="{Binding CommitCommand}"
                                         Style="{StaticResource PrimaryActionButtonStyle}"
                                         Margin="5,0,0,0"/>
                             </StackPanel>
-                            <!-- ▲▲▲ [수정] 여기까지 ▲▲▲ -->
                             <TextBox Text="{Binding CommitTitle, UpdateSourceTrigger=PropertyChanged}" DockPanel.Dock="Top" Margin="0,5,0,0" MaxLength="50"/>
                             <TextBox Text="{Binding CommitBody, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Margin="0,5,0,0"/>
                         </DockPanel>
@@ -110,13 +127,13 @@
                                 <Button Content="방금 커밋 취소" Command="{Binding UndoLastCommitCommand}"/>
                                 <Button Content="이 시점으로 돌아가기" Command="{Binding ResetToCommitCommand}" Margin="5,0,0,0"/>
                             </StackPanel>
-                            <TextBox DockPanel.Dock="Bottom" 
+                            <TextBox DockPanel.Dock="Bottom"
                                      Text="{Binding SelectedCommit.Hash, FallbackValue='커밋을 선택하면 전체 해시가 표시됩니다.'}"
-                                     IsReadOnly="True" 
+                                     IsReadOnly="True"
                                      Margin="0,5,0,5"
                                      FontFamily="Consolas"/>
-                            <ListBox ItemsSource="{Binding CommitHistory}" 
-                                     SelectedItem="{Binding SelectedCommit}" 
+                            <ListBox ItemsSource="{Binding CommitHistory}"
+                                     SelectedItem="{Binding SelectedCommit}"
                                      DisplayMemberPath="DisplayMember"
                                      MouseDoubleClick="CommitListBox_MouseDoubleClick">
                             </ListBox>
