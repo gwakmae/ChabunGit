@@ -104,13 +104,18 @@ namespace ChabunGit.Services
         // 1. GetDiffAsync: 번역 없이 순수하게 diff 결과만 가져옵니다.
         public async Task<string> GetDiffAsync(string repoPath)
         {
-            var diffResult = await _executor.ExecuteAsync(repoPath, "diff HEAD");
+            // --text : 바이너리로 보이더라도 텍스트 diff 시도
+            // -U0 등 옵션 추가로 문맥 줄 제어 가능
+            var diffResult = await _executor.ExecuteAsync(repoPath, "diff --text HEAD");
 
             if (diffResult.ExitCode != 0 || string.IsNullOrWhiteSpace(diffResult.Output))
             {
-                return "커밋할 변경 사항이 없습니다.";
+                // 혹시 output 이 여전히 비어있을 때 -a(모든 파일 텍스트 취급) 재시도
+                var retry = await _executor.ExecuteAsync(repoPath, "diff -a HEAD");
+                if (retry.ExitCode != 0 || string.IsNullOrWhiteSpace(retry.Output))
+                    return "커밋할 변경 사항이 없습니다.";
+                return retry.Output;
             }
-            // Git이 올바른 UTF-8 결과물을 주므로, 그대로 반환하면 됩니다.
             return diffResult.Output;
         }
 
@@ -122,7 +127,8 @@ $@"아래는 'git diff' 결과입니다. 이 변경 사항에 대한 커밋 메�
 
 1.  **제목 (Subject):**
     * 변경 사항을 요약하는 한 줄의 제목을 작성합니다.
-    * **반드시 50자 이내**로 작성해야 합니다.
+    * 제목 전체는 **50자를 넘지 않도록** 간결하게 작성합니다.
+    * Conventional Commits 형식(`refactor:`, `feat:`, `fix:` 등)을 따라 영어로 작성합니다.
     * 명령형으로 작성합니다 (예: 'Fix' not 'Fixed', 'Add' not 'Added').
     * 제목 끝에 마침표를 찍지 마세요.
 
@@ -130,16 +136,21 @@ $@"아래는 'git diff' 결과입니다. 이 변경 사항에 대한 커밋 메�
     * 제목 아래에 한 줄을 비웁니다.
     * 무엇을, 왜 변경했는지 **자세히 설명**합니다. 한 줄이 아닌 **여러 줄로 작성**해도 좋습니다.
     * 어떻게 변경했는지는 코드 diff에 있으므로, 그보다는 **변경의 이유와 맥락**에 집중해주세요.
+    * 그 다음, 한 줄을 비우고, 위 영문 항목들을 **한국어**로 동일하게 `-`를 사용하여 나열합니다.
 
 3.  **출력 형식:**
     * 생성된 제목과 본문을 합쳐서, 아래 예시처럼 바로 사용할 수 있는 'git commit -m ""...""' 명령어 형식으로 만들어주세요.
 
 [커밋 메시지 예시]
-git commit -m ""feat: Implement user authentication endpoint
+git commit -m ""refactor: Optimize hidden task counting logic
 
-- Add user registration and login logic.
-- Use JWT for token-based authentication.
-- Include basic validation for user input.""
+- Replace flat collection with hierarchical traversal
+- Add early optimization when showHidden is enabled
+- Implement recursive counting respecting parent hiding
+
+- 평면화 방식을 계층적 순회로 교체
+- showHidden 활성화시 조기 최적화 추가
+- 부모 숨김 상태를 고려한 재귀 카운팅 구현""
 
 이제 아래 diff 내용을 분석하여 커밋 메시지를 생성해 주세요.
 
