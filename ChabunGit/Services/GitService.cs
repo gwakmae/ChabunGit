@@ -60,7 +60,7 @@ namespace ChabunGit.Services
 
             // 3. 단 하나의 -m 플래그를 사용하여 전체 메시지를 전달합니다.
             string command = $"commit -m \"{escapedMessage}\"";
-            
+
             return await Executor.ExecuteAsync(repoPath, command);
         }
 
@@ -87,7 +87,7 @@ namespace ChabunGit.Services
         {
             // "git remote" 명령어는 설정된 원격 저장소가 있으면 그 이름을 출력하고, 없으면 아무것도 출력하지 않습니다.
             var result = await Executor.ExecuteAsync(repoPath, "remote");
-            
+
             // 결과의 ExitCode가 0이고, 표준 출력이 비어있지 않다면 원격 저장소가 존재하는 것입니다.
             return result.ExitCode == 0 && !string.IsNullOrWhiteSpace(result.Output);
         }
@@ -128,5 +128,13 @@ namespace ChabunGit.Services
                 // (예: 권한 문제 등)
             }
         }
+
+        // ▼▼▼ [추가] 파일 추적을 중단하는 git rm --cached 명령어를 실행하는 메서드를 추가합니다. ▼▼▼
+        public async Task<GitCommandExecutor.ProcessResult> StopTrackingFileAsync(string repoPath, string filePath)
+        {
+            // 파일 경로에 공백이 있을 수 있으므로 따옴표로 감싸줍니다.
+            return await Executor.ExecuteAsync(repoPath, $"rm --cached \"{filePath}\"");
+        }
+        // ▲▲▲ [추가] 여기까지 ▲▲▲
     }
 }

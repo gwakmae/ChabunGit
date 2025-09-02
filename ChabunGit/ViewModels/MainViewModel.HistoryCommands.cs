@@ -35,7 +35,7 @@ namespace ChabunGit.ViewModels
             await RefreshRepositoryInfoAsync();
             IsBusy = false;
         }
-        
+
         [RelayCommand]
         private async Task ShowCommitDetailsAsync(CommitInfo? commit)
         {
@@ -43,27 +43,22 @@ namespace ChabunGit.ViewModels
             IsBusy = true;
             AddLog($"커밋 상세 정보 조회 중: {commit.ShortHash}");
             var result = await _gitService.GetCommitDetailsAsync(SelectedFolder, commit.Hash);
-            if (result.ExitCode == 0) {
+            if (result.ExitCode == 0)
+            {
                 _dialogService.ShowCommitDetails(commit.ShortHash, result.Output);
                 AddLog("커밋 상세 정보 표시 완료.");
-            } else {
+            }
+            else
+            {
                 _dialogService.ShowMessage($"커밋 정보를 가져오는 중 오류가 발생했습니다:\n{result.Error}", "오류");
                 AddLog($"커밋 정보 조회 실패: {result.Error}");
             }
             IsBusy = false;
         }
 
-        [RelayCommand(CanExecute = nameof(IsRepoValid))]
-        private async Task EditGitignoreAsync()
-        {
-            string gitignorePath = Path.Combine(SelectedFolder!, ".gitignore");
-            string content = File.Exists(gitignorePath) ? await File.ReadAllTextAsync(gitignorePath) : "# .NET 프로젝트 무시 파일 예시\n[Bb]in/\n[Oo]bj/";
-            string? newContent = _dialogService.ShowGitignoreEditor(content);
-            if (newContent != null) {
-                await File.WriteAllTextAsync(gitignorePath, newContent);
-                AddLog(".gitignore 파일이 수정되었습니다. 변경 파일 목록을 갱신합니다.");
-                await RefreshRepositoryInfoAsync();
-            }
-        }
+        // ▼▼▼ [삭제] EditGitignoreAsync 커맨드를 MainViewModel.FileCommands.cs로 이동시켰으므로 이 파일에서는 삭제합니다. ▼▼▼
+        // [RelayCommand(CanExecute = nameof(IsRepoValid))]
+        // private async Task EditGitignoreAsync() { ... }
+        // ▲▲▲ [삭제] 여기까지 ▲▲▲
     }
 }

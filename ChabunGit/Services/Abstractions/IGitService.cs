@@ -25,5 +25,9 @@ namespace ChabunGit.Services.Abstractions
         Task<GitCommandExecutor.ProcessResult> GetCommitDetailsAsync(string repoPath, string commitHash);
         Task EnsureUtf8ConfigAsync(string repoPath);
         Task<bool> HasRemoteAsync(string repoPath);
+
+        // ▼▼▼ [추가] 파일 추적 중단 메서드 시그니처를 추가합니다. ▼▼▼
+        Task<GitCommandExecutor.ProcessResult> StopTrackingFileAsync(string repoPath, string filePath);
+        // ▲▲▲ [추가] 여기까지 ▲▲▲
     }
 }

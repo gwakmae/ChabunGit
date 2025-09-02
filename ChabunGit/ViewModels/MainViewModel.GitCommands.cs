@@ -7,6 +7,15 @@ namespace ChabunGit.ViewModels
 {
     public partial class MainViewModel
     {
+        // ▼▼▼ [추가] UI를 수동으로 새로고침하는 커맨드를 추가합니다. ▼▼▼
+        [RelayCommand(CanExecute = nameof(IsRepoValid))]
+        private async Task RefreshAsync()
+        {
+            // 기존에 사용하던 저장소 정보 갱신 로직을 그대로 호출합니다.
+            await RefreshRepositoryInfoAsync();
+        }
+        // ▲▲▲ [추가] 여기까지 ▲▲▲
+
         [RelayCommand(CanExecute = nameof(IsRepoValid))]
         private async Task FetchAsync()
         {
@@ -19,10 +28,12 @@ namespace ChabunGit.ViewModels
             var statusResult = await _gitService.Executor.ExecuteAsync(SelectedFolder!, "status -sb");
             string status = statusResult.Output.Trim();
 
-            if (status.Contains("behind")) {
+            if (status.Contains("behind"))
+            {
                 FetchStatus = "⚠️ 경고: 팀원이 올린 새로운 내용이 있습니다. Pull 하세요.";
                 CanPull = true;
-            } else if (status.Contains("ahead")) FetchStatus = "✅ 원격 저장소보다 앞서 있습니다. Push 하세요.";
+            }
+            else if (status.Contains("ahead")) FetchStatus = "✅ 원격 저장소보다 앞서 있습니다. Push 하세요.";
             else if (status.Contains("up-to-date") || !status.Contains("origin")) FetchStatus = "✅ 원격 저장소와 동기화됨.";
             else FetchStatus = "원격 저장소 상태를 확인할 수 없습니다.";
 
@@ -38,10 +49,13 @@ namespace ChabunGit.ViewModels
             AddLog("원격 내용 가져오는 중 (Pull)...");
             var pullResult = await _gitService.PullAsync(SelectedFolder!);
             AddLog(pullResult.Output + pullResult.Error);
-            if (pullResult.ExitCode == 0) {
+            if (pullResult.ExitCode == 0)
+            {
                 AddLog("✅ Pull 성공!");
                 await RefreshRepositoryInfoAsync();
-            } else {
+            }
+            else
+            {
                 _dialogService.ShowMessage($"Pull 중 오류가 발생했습니다.\n로그를 확인하고 충돌을 수동으로 해결해주세요.\n\n{pullResult.Error}", "Pull 오류");
             }
             IsBusy = false;
@@ -58,10 +72,13 @@ namespace ChabunGit.ViewModels
             var pushResult = await _gitService.PushAsync(SelectedFolder!, IsForcePushChecked, isFirstPush);
             AddLog(pushResult.Output + pushResult.Error);
 
-            if (pushResult.ExitCode == 0) {
+            if (pushResult.ExitCode == 0)
+            {
                 AddLog("✅ Push 성공!");
                 await RefreshRepositoryInfoAsync();
-            } else {
+            }
+            else
+            {
                 _dialogService.ShowMessage($"Push 중 오류가 발생했습니다: {pushResult.Error}", "오류");
             }
             IsBusy = false;
@@ -82,7 +99,8 @@ namespace ChabunGit.ViewModels
             var commitResult = await _gitService.CommitAsync(SelectedFolder!, CommitTitle, CommitBody);
             AddLog(commitResult.Output + commitResult.Error);
 
-            if (commitResult.ExitCode == 0) {
+            if (commitResult.ExitCode == 0)
+            {
                 AddLog("✅ 커밋 성공!");
                 CommitTitle = "";
                 CommitBody = "";

@@ -39,6 +39,9 @@
                 </Grid>
 
                 <StackPanel Orientation="Horizontal" Margin="0,15,0,0">
+                    <!-- ▼▼▼ [추가] 새로고침 버튼을 다른 주요 버튼들 앞에 추가합니다. ▼▼▼ -->
+                    <Button Content="🔄 새로고침" Command="{Binding RefreshCommand}" Style="{StaticResource MainActionButtonStyle}"/>
+                    <!-- ▲▲▲ [추가] 여기까지 ▲▲▲ -->
                     <Button Content="⬇️ 원격 확인 (Fetch)" Command="{Binding FetchCommand}" Style="{StaticResource MainActionButtonStyle}"/>
                     <Button Content="⤵️ 원격 가져오기 (Pull)" Command="{Binding PullCommand}" Style="{StaticResource MainActionButtonStyle}"/>
                     <Button Content="✨ GitHub에 공유 (Push)" Command="{Binding PushCommand}" Style="{StaticResource PrimaryActionButtonStyle}"/>
@@ -97,7 +100,16 @@
                         </StackPanel>
                     </GroupBox>
                     <GroupBox Header="변경된 파일 목록">
-                        <ListBox ItemsSource="{Binding ChangedFiles}"/>
+                        <ListBox ItemsSource="{Binding ChangedFiles}"
+                                 SelectedItem="{Binding SelectedChangedFile}">
+                            <ListBox.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="이 파일 추적 중단 (.gitignore에 추가)"
+                                              Command="{Binding StopTrackingFileCommand}"
+                                              CommandParameter="{Binding SelectedChangedFile}"/>
+                                </ContextMenu>
+                            </ListBox.ContextMenu>
+                        </ListBox>
                     </GroupBox>
                 </DockPanel>
 

@@ -14,9 +14,10 @@ namespace ChabunGit.ViewModels
         [ObservableProperty] private bool _isLocalRepoWithoutRemote;
         [ObservableProperty] private string _fetchStatus = "초기화";
         [ObservableProperty] private bool _isForcePushChecked;
-        
+
         [ObservableProperty]
-        [NotifyCanExecuteChangedFor(nameof(FetchCommand), nameof(PushCommand), nameof(CommitCommand), nameof(UndoLastCommitCommand), nameof(ResetToCommitCommand), nameof(EditGitignoreCommand), nameof(GenerateGitignorePromptCommand), nameof(AnalyzeChangesCommand))]
+        // ▼▼▼ [수정] RefreshCommand를 CanExecute 상태 변경 알림 목록 맨 앞에 추가합니다. ▼▼▼
+        [NotifyCanExecuteChangedFor(nameof(RefreshCommand), nameof(FetchCommand), nameof(PushCommand), nameof(CommitCommand), nameof(UndoLastCommitCommand), nameof(ResetToCommitCommand), nameof(EditGitignoreCommand), nameof(GenerateGitignorePromptCommand), nameof(AnalyzeChangesCommand), nameof(StopTrackingFileCommand))]
         private bool _isRepoValid;
 
         [ObservableProperty]
@@ -37,7 +38,11 @@ namespace ChabunGit.ViewModels
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(ResetToCommitCommand))]
         private CommitInfo? _selectedCommit;
-        
+
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(StopTrackingFileCommand))]
+        private string? _selectedChangedFile;
+
         // 새 프로젝트 가이드 관련 속성
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(AddRemoteCommand))]
