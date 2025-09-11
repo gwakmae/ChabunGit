@@ -29,5 +29,9 @@ namespace ChabunGit.Services.Abstractions
         // ▼▼▼ [추가] 파일 추적 중단 메서드 시그니처를 추가합니다. ▼▼▼
         Task<GitCommandExecutor.ProcessResult> StopTrackingFileAsync(string repoPath, string filePath);
         // ▲▲▲ [추가] 여기까지 ▲▲▲
+
+        // ▼▼▼ [추가] 인덱스 잠금 해제 시도 메서드 시그니처를 추가합니다. ▼▼▼
+        Task<bool> TryUnlockIndexAsync(string repoPath);
+        // ▲▲▲ [추가] 여기까지 ▲▲▲
     }
 }

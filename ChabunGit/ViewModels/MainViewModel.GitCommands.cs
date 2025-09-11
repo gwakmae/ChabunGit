@@ -86,14 +86,21 @@ namespace ChabunGit.ViewModels
 
         private bool CanCommit() => IsRepoValid && !string.IsNullOrWhiteSpace(CommitTitle);
 
+        // ▼▼▼ [수정] CommitAsync가 TryStageWithLockFixAsync 헬퍼를 사용하도록 변경 ▼▼▼
         [RelayCommand(CanExecute = nameof(CanCommit))]
         private async Task CommitAsync()
         {
             IsBusy = true;
             AddLog("변경 사항 스테이징 중...");
-            var stageResult = await _gitService.StageAllChangesAsync(SelectedFolder!);
-            AddLog(stageResult.Output + stageResult.Error);
-            if (stageResult.ExitCode != 0) { IsBusy = false; return; }
+
+            // 기존 StageAllChangesAsync 호출을 새로운 헬퍼 메서드로 교체
+            bool isStaged = await TryStageWithLockFixAsync();
+            if (!isStaged)
+            {
+                AddLog("❌ 스테이징에 실패하여 커밋을 중단합니다.");
+                IsBusy = false;
+                return;
+            }
 
             AddLog("커밋 생성 중...");
             var commitResult = await _gitService.CommitAsync(SelectedFolder!, CommitTitle, CommitBody);
@@ -108,5 +115,6 @@ namespace ChabunGit.ViewModels
             }
             IsBusy = false;
         }
+        // ▲▲▲ [수정] 여기까지 ▲▲▲
     }
 }

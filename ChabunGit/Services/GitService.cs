@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace ChabunGit.Services
 {
@@ -134,6 +135,27 @@ namespace ChabunGit.Services
         {
             // 파일 경로에 공백이 있을 수 있으므로 따옴표로 감싸줍니다.
             return await Executor.ExecuteAsync(repoPath, $"rm --cached \"{filePath}\"");
+        }
+        // ▲▲▲ [추가] 여기까지 ▲▲▲
+
+        // ▼▼▼ [추가] 인덱스 잠금 파일(index.lock) 삭제를 시도하는 메서드를 추가합니다. ▼▼▼
+        public Task<bool> TryUnlockIndexAsync(string repoPath)
+        {
+            try
+            {
+                string lockPath = Path.Combine(repoPath, ".git", "index.lock");
+                if (File.Exists(lockPath))
+                {
+                    File.Delete(lockPath);
+                }
+                return Task.FromResult(true); // 파일이 없거나, 삭제에 성공하면 true
+            }
+            catch (Exception ex)
+            {
+                // 실제 운영 코드에서는 로깅을 하는 것이 좋습니다.
+                Debug.WriteLine($"Failed to delete index.lock: {ex.Message}");
+                return Task.FromResult(false); // 권한 등의 문제로 삭제 실패 시
+            }
         }
         // ▲▲▲ [추가] 여기까지 ▲▲▲
     }
