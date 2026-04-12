@@ -1,3 +1,4 @@
+<!-- File: ChabunGit/Views/MainWindow.xaml -->
 <Window x:Class="ChabunGit.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -26,6 +27,8 @@
 
     <Grid>
         <DockPanel Margin="10" IsEnabled="{Binding IsBusy, Converter={StaticResource BooleanInverterConverter}}">
+
+            <!-- 상단: 폴더 선택 + 브랜치 + 주요 버튼 -->
             <StackPanel DockPanel.Dock="Top" Orientation="Vertical">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -33,33 +36,58 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <Button Grid.Column="0" Content="폴더 선택" Command="{Binding SelectFolderCommand}" Padding="10,5"/>
-                    <TextBox Grid.Column="1" Text="{Binding SelectedFolder, Mode=OneWay}" IsReadOnly="True" VerticalContentAlignment="Center" Margin="10,0"/>
-                    <TextBlock Grid.Column="2" Text="{Binding CurrentBranch}" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <Button Grid.Column="0"
+                            Content="폴더 선택"
+                            Command="{Binding SelectFolderCommand}"
+                            Padding="10,5"/>
+                    <TextBox Grid.Column="1"
+                             Text="{Binding SelectedFolder, Mode=OneWay}"
+                             IsReadOnly="True"
+                             VerticalContentAlignment="Center"
+                             Margin="10,0"/>
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding CurrentBranch}"
+                               FontWeight="Bold"
+                               VerticalAlignment="Center"/>
                 </Grid>
 
                 <StackPanel Orientation="Horizontal" Margin="0,15,0,0">
-                    <!-- ▼▼▼ [추가] 새로고침 버튼을 다른 주요 버튼들 앞에 추가합니다. ▼▼▼ -->
-                    <Button Content="🔄 새로고침" Command="{Binding RefreshCommand}" Style="{StaticResource MainActionButtonStyle}"/>
-                    <!-- ▲▲▲ [추가] 여기까지 ▲▲▲ -->
-                    <Button Content="⬇️ 원격 확인 (Fetch)" Command="{Binding FetchCommand}" Style="{StaticResource MainActionButtonStyle}"/>
-                    <Button Content="⤵️ 원격 가져오기 (Pull)" Command="{Binding PullCommand}" Style="{StaticResource MainActionButtonStyle}"/>
-                    <Button Content="✨ GitHub에 공유 (Push)" Command="{Binding PushCommand}" Style="{StaticResource PrimaryActionButtonStyle}"/>
-                    <CheckBox IsChecked="{Binding IsForcePushChecked}" Content="강제 푸시" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                    <Button Content="🔄 새로고침"
+                            Command="{Binding RefreshCommand}"
+                            Style="{StaticResource MainActionButtonStyle}"/>
+                    <Button Content="⬇️ 원격 확인 (Fetch)"
+                            Command="{Binding FetchCommand}"
+                            Style="{StaticResource MainActionButtonStyle}"/>
+                    <Button Content="❤️ 원격 가져오기 (Pull)"
+                            Command="{Binding PullCommand}"
+                            Style="{StaticResource MainActionButtonStyle}"/>
+                    <Button Content="✨ GitHub에 공유 (Push)"
+                            Command="{Binding PushCommand}"
+                            Style="{StaticResource PrimaryActionButtonStyle}"/>
+                    <CheckBox IsChecked="{Binding IsForcePushChecked}"
+                              Content="강제 푸시"
+                              VerticalAlignment="Center"
+                              Margin="10,0,0,0"/>
                 </StackPanel>
             </StackPanel>
 
+            <!-- 원격 저장소 미연결 경고 배너 -->
             <Border DockPanel.Dock="Top"
                     Margin="0,15,0,0"
                     Padding="10"
                     BorderBrush="Orange"
                     BorderThickness="2"
                     CornerRadius="5"
-                    Visibility="{Binding IsLocalRepoWithoutRemote, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}">
-                <GroupBox Header="⚠️ 원격 저장소 연결 필요" FontWeight="Bold">
+                    Visibility="{Binding IsLocalRepoWithoutRemote,
+                                 Converter={StaticResource BooleanToVisibilityConverter},
+                                 FallbackValue=Collapsed}">
+                <GroupBox Header="⚠️ 원격 저장소 연동 필요" FontWeight="Bold">
                     <StackPanel>
-                        <TextBlock Text="이 로컬 저장소는 GitHub와 같은 원격 저장소에 연결되지 않았습니다. 새로 만든 빈 저장소의 HTTPS 주소를 입력하고 연결하세요." TextWrapping="Wrap"/>
-                        <TextBox Margin="0,5,0,0" Text="{Binding NewProjectGitHubUrl, UpdateSourceTrigger=PropertyChanged}" ToolTip="예: https://github.com/user/repo.git"/>
+                        <TextBlock Text="이 로컬 저장소는 GitHub와 같은 원격 저장소에 연결되지 않았습니다. 새로 만든 빈 저장소의 HTTPS 주소를 입력하고 연결하세요."
+                                   TextWrapping="Wrap"/>
+                        <TextBox Margin="0,5,0,0"
+                                 Text="{Binding NewProjectGitHubUrl, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="예: https://github.com/user/repo.git"/>
                         <Button Content="원격 저장소 연결"
                                 Command="{Binding AddRemoteCommand}"
                                 HorizontalAlignment="Left"
@@ -68,14 +96,23 @@
                 </GroupBox>
             </Border>
 
+            <!-- 하단: 상태바 -->
             <StatusBar DockPanel.Dock="Bottom" Margin="0,10,0,0">
                 <StatusBarItem>
                     <TextBlock Text="{Binding FetchStatus}"/>
                 </StatusBarItem>
             </StatusBar>
-            <GroupBox DockPanel.Dock="Bottom" Header="명령어 로그" Height="150" Margin="0,5,0,0">
+
+            <!-- 하단: 명령어 로그 -->
+            <GroupBox DockPanel.Dock="Bottom"
+                      Header="명령어 로그"
+                      Height="150"
+                      Margin="0,5,0,0">
                 <DockPanel>
-                    <Button DockPanel.Dock="Bottom" Content="로그 복사" Command="{Binding CopyLogCommand}" Margin="0,5,0,0"/>
+                    <Button DockPanel.Dock="Bottom"
+                            Content="로그 복사"
+                            Command="{Binding CopyLogCommand}"
+                            Margin="0,5,0,0"/>
                     <TextBox x:Name="LogTextBox"
                              Text="{Binding LogText, Mode=OneWay}"
                              IsReadOnly="True"
@@ -85,6 +122,7 @@
                 </DockPanel>
             </GroupBox>
 
+            <!-- 중앙: 좌/우 패널 -->
             <Grid Margin="0,10,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="3*"/>
@@ -92,13 +130,26 @@
                     <ColumnDefinition Width="5*"/>
                 </Grid.ColumnDefinitions>
 
+                <!-- 좌측 패널: 변경된 파일 목록 + .gitignore 관리 -->
                 <DockPanel Grid.Column="0">
+
+                    <!-- .gitignore 관리 -->
                     <GroupBox DockPanel.Dock="Bottom" Header=".gitignore 관리" Padding="5">
                         <StackPanel>
-                            <Button Content=".gitignore 열기/수정" Command="{Binding EditGitignoreCommand}"/>
-                            <Button Content="✨ .gitignore 질문" Command="{Binding GenerateGitignorePromptCommand}" Margin="0,5,0,0"/>
+                            <Button Content=".gitignore 열기/수정"
+                                    Command="{Binding EditGitignoreCommand}"/>
+                            <Button Content="✨ .gitignore 질문지"
+                                    Command="{Binding GenerateGitignorePromptCommand}"
+                                    Margin="0,5,0,0"
+                                    ToolTip="AI에게 질문할 .gitignore 프롬프트를 생성합니다."/>
+                            <Button Content="🤖 AI로 .gitignore 생성"
+                                    Command="{Binding GenerateGitignoreWithAICommand}"
+                                    Margin="0,5,0,0"
+                                    ToolTip="AI가 프로젝트를 분석하여 .gitignore 파일을 자동으로 생성합니다."/>
                         </StackPanel>
                     </GroupBox>
+
+                    <!-- 변경된 파일 목록 -->
                     <GroupBox Header="변경된 파일 목록">
                         <ListBox ItemsSource="{Binding ChangedFiles}"
                                  SelectedItem="{Binding SelectedChangedFile}">
@@ -113,73 +164,157 @@
                     </GroupBox>
                 </DockPanel>
 
-                <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="LightGray"/>
+                <GridSplitter Grid.Column="1"
+                              Width="5"
+                              HorizontalAlignment="Stretch"
+                              Background="LightGray"/>
 
+                <!-- 우측 패널: 커밋 메시지 작성 + 커밋 이력 -->
                 <DockPanel Grid.Column="2">
-                    <GroupBox Header="커밋 메시지 작성" DockPanel.Dock="Top" MinHeight="220" MaxHeight="300">
+
+                    <!-- 커밋 메시지 작성 -->
+                    <GroupBox Header="커밋 메시지 작성"
+                              DockPanel.Dock="Top"
+                              MinHeight="220"
+                              MaxHeight="300">
                         <DockPanel>
-                            <TextBlock Text="{Binding TitleCharCountText}" DockPanel.Dock="Top" Margin="2"/>
-                            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5,0,0">
+                            <TextBlock Text="{Binding TitleCharCountText}"
+                                       DockPanel.Dock="Top"
+                                       Margin="2"/>
+
+                            <!-- 버튼 영역 -->
+                            <StackPanel DockPanel.Dock="Bottom"
+                                        Orientation="Horizontal"
+                                        HorizontalAlignment="Right"
+                                        Margin="0,5,0,0">
                                 <Button Content="변경점 분석"
                                         Command="{Binding AnalyzeChangesCommand}"
                                         Style="{StaticResource MainActionButtonStyle}"
                                         ToolTip="git diff 결과를 확인하고 AI에게 질문할 프롬프트를 생성합니다."/>
+                                <Button Content="✨ AI로 커밋 메시지 생성"
+                                        Command="{Binding GenerateCommitMessageWithAICommand}"
+                                        Style="{StaticResource MainActionButtonStyle}"
+                                        Margin="5,0,0,0"
+                                        ToolTip="AI를 활용하여 커밋 메시지를 자동으로 생성합니다."/>
+
+                                <!-- ▼▼▼ [추가] Initial Commit AI 생성 버튼 ▼▼▼ -->
+                                <Button Content="🚀 AI Initial Commit"
+                                        Command="{Binding GenerateInitialCommitWithAICommand}"
+                                        Margin="5,0,0,0"
+                                        Padding="10,5"
+                                        FontWeight="Bold"
+                                        Background="#2196F3"
+                                        Foreground="White"
+                                        BorderThickness="0"
+                                        Cursor="Hand"
+                                        MinWidth="120"
+                                        ToolTip="프로젝트 전체 코드를 AI가 분석하여 Initial Commit 메시지를 생성합니다. 첫 커밋에 사용하세요."/>
+                                <!-- ▲▲▲ [추가] 여기까지 ▲▲▲ -->
+
                                 <Button Content="커밋"
                                         Command="{Binding CommitCommand}"
                                         Style="{StaticResource PrimaryActionButtonStyle}"
                                         Margin="5,0,0,0"/>
                             </StackPanel>
-                            <TextBox Text="{Binding CommitTitle, UpdateSourceTrigger=PropertyChanged}" DockPanel.Dock="Top" Margin="0,5,0,0" MaxLength="50"/>
-                            <TextBox Text="{Binding CommitBody, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Margin="0,5,0,0"/>
+
+                            <!-- 제목 입력 -->
+                            <TextBox Text="{Binding CommitTitle, UpdateSourceTrigger=PropertyChanged}"
+                                     DockPanel.Dock="Top"
+                                     Margin="0,5,0,0"
+                                     MaxLength="50"/>
+
+                            <!-- 본문 입력 -->
+                            <TextBox Text="{Binding CommitBody, UpdateSourceTrigger=PropertyChanged}"
+                                     AcceptsReturn="True"
+                                     TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto"
+                                     Margin="0,5,0,0"/>
                         </DockPanel>
                     </GroupBox>
+
+                    <!-- 커밋 이력 -->
                     <GroupBox Header="커밋 이력" Margin="0,5,0,0">
                         <DockPanel>
-                            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,5,0,0">
-                                <Button Content="방금 커밋 취소" Command="{Binding UndoLastCommitCommand}"/>
-                                <Button Content="이 시점으로 돌아가기" Command="{Binding ResetToCommitCommand}" Margin="5,0,0,0"/>
+                            <StackPanel DockPanel.Dock="Bottom"
+                                        Orientation="Horizontal"
+                                        Margin="0,5,0,0">
+                                <Button Content="방금 커밋 취소"
+                                        Command="{Binding UndoLastCommitCommand}"/>
+                                <Button Content="이 시점으로 돌아가기"
+                                        Command="{Binding ResetToCommitCommand}"
+                                        Margin="5,0,0,0"/>
                             </StackPanel>
                             <TextBox DockPanel.Dock="Bottom"
-                                     Text="{Binding SelectedCommit.Hash, FallbackValue='커밋을 선택하면 전체 해시가 표시됩니다.'}"
+                                     Text="{Binding SelectedCommit.Hash,
+                                            FallbackValue='커밋을 선택하면 전체 해시가 표시됩니다.'}"
                                      IsReadOnly="True"
                                      Margin="0,5,0,5"
                                      FontFamily="Consolas"/>
                             <ListBox ItemsSource="{Binding CommitHistory}"
                                      SelectedItem="{Binding SelectedCommit}"
                                      DisplayMemberPath="DisplayMember"
-                                     MouseDoubleClick="CommitListBox_MouseDoubleClick">
-                            </ListBox>
+                                     MouseDoubleClick="CommitListBox_MouseDoubleClick"/>
                         </DockPanel>
                     </GroupBox>
+
                 </DockPanel>
             </Grid>
         </DockPanel>
 
-        <Border Background="#E0FFFFFF" Visibility="{Binding IsNewProjectGuideActive, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}">
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="600">
-                <TextBlock Text="새 프로젝트 설정 가이드" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center"/>
-                <TextBlock Text="선택한 폴더는 Git 저장소가 아닙니다. 아래 단계에 따라 저장소를 설정하세요." TextWrapping="Wrap" Margin="0,10,0,20"/>
+        <!-- 새 프로젝트 가이드 오버레이 -->
+        <Border Background="#E0FFFFFF"
+                Visibility="{Binding IsNewProjectGuideActive,
+                             Converter={StaticResource BooleanToVisibilityConverter},
+                             FallbackValue=Collapsed}">
+            <StackPanel HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        MaxWidth="600">
+                <TextBlock Text="새 프로젝트 설정 가이드"
+                           FontSize="24"
+                           FontWeight="Bold"
+                           HorizontalAlignment="Center"/>
+                <TextBlock Text="선택한 폴더는 Git 저장소가 아닙니다. 아래 단계에 따라 저장소를 설정하세요."
+                           TextWrapping="Wrap"
+                           Margin="0,10,0,20"/>
 
                 <GroupBox Header="1. 로컬 저장소 생성" Padding="10">
-                    <Button Content="이 폴더를 Git 저장소로 만들기 (git init)" Command="{Binding InitializeGitCommand}" IsEnabled="{Binding GuideCanInit}"/>
+                    <Button Content="이 폴더를 Git 저장소로 만들기 (git init)"
+                            Command="{Binding InitializeGitCommand}"
+                            IsEnabled="{Binding GuideCanInit}"/>
                 </GroupBox>
 
-                <GroupBox Header="2. 원격 저장소 연결 (선택사항)" Padding="10" Margin="0,10,0,0" IsEnabled="{Binding GuideCanAddRemote}">
+                <GroupBox Header="2. 원격 저장소 연결 (선택사항)"
+                          Padding="10"
+                          Margin="0,10,0,0"
+                          IsEnabled="{Binding GuideCanAddRemote}">
                     <StackPanel>
                         <TextBlock Text="GitHub에서 새로 만든 빈 저장소의 HTTPS 주소를 입력하세요."/>
-                        <TextBox Margin="0,5,0,0" Text="{Binding NewProjectGitHubUrl, UpdateSourceTrigger=PropertyChanged}"/>
-                        <Button Content="원격 저장소 연결" Command="{Binding AddRemoteCommand}" Margin="0,5,0,0"/>
+                        <TextBox Margin="0,5,0,0"
+                                 Text="{Binding NewProjectGitHubUrl, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Button Content="원격 저장소 연결"
+                                Command="{Binding AddRemoteCommand}"
+                                Margin="0,5,0,0"/>
                     </StackPanel>
                 </GroupBox>
 
                 <GroupBox Header="3. 완료" Padding="10" Margin="0,10,0,0">
-                    <Button Content="설정 완료하고 시작하기" Command="{Binding CompleteGuideCommand}" IsEnabled="{Binding GuideCanComplete}"/>
+                    <Button Content="설정 완료하고 시작하기"
+                            Command="{Binding CompleteGuideCommand}"
+                            IsEnabled="{Binding GuideCanComplete}"/>
                 </GroupBox>
             </StackPanel>
         </Border>
 
-        <Border Background="#80000000" Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}">
-            <TextBlock Text="처리 중..." Foreground="White" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <!-- 처리 중 오버레이 -->
+        <Border Background="#80000000"
+                Visibility="{Binding IsBusy,
+                             Converter={StaticResource BooleanToVisibilityConverter},
+                             FallbackValue=Collapsed}">
+            <TextBlock Text="처리 중..."
+                       Foreground="White"
+                       FontSize="24"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"/>
         </Border>
     </Grid>
 </Window>

@@ -16,8 +16,20 @@ namespace ChabunGit.ViewModels
         [ObservableProperty] private bool _isForcePushChecked;
 
         [ObservableProperty]
-        // ▼▼▼ [수정] RefreshCommand를 CanExecute 상태 변경 알림 목록 맨 앞에 추가합니다. ▼▼▼
-        [NotifyCanExecuteChangedFor(nameof(RefreshCommand), nameof(FetchCommand), nameof(PushCommand), nameof(CommitCommand), nameof(UndoLastCommitCommand), nameof(ResetToCommitCommand), nameof(EditGitignoreCommand), nameof(GenerateGitignorePromptCommand), nameof(AnalyzeChangesCommand), nameof(StopTrackingFileCommand))]
+        [NotifyCanExecuteChangedFor(
+            nameof(RefreshCommand),
+            nameof(FetchCommand),
+            nameof(PushCommand),
+            nameof(CommitCommand),
+            nameof(UndoLastCommitCommand),
+            nameof(ResetToCommitCommand),
+            nameof(EditGitignoreCommand),
+            nameof(GenerateGitignorePromptCommand),
+            nameof(GenerateGitignoreWithAICommand),       // ▼ [추가]
+            nameof(GenerateCommitMessageWithAICommand),   // 기존
+            nameof(AnalyzeChangesCommand),
+            nameof(StopTrackingFileCommand)
+        )]
         private bool _isRepoValid;
 
         [ObservableProperty]

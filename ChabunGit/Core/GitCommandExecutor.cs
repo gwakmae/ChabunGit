@@ -29,7 +29,7 @@ namespace ChabunGit.Core
             await gate.WaitAsync();
             try
             {
-                var processStartInfo = new ProcessStartInfo
+                var processStartInfo = new ProcessStartInfo 
                 {
                     FileName = "git",
                     Arguments = arguments,

@@ -7,6 +7,7 @@ using ChabunGit.Views;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
+using System.Net.Http;
 using System.Windows;
 
 namespace ChabunGit
@@ -34,13 +35,25 @@ namespace ChabunGit
             services.AddSingleton<IConfigManager, ConfigManager>();
             services.AddSingleton<IGitService, GitService>();
             services.AddSingleton<IDialogService, WpfDialogService>();
+
+            // ▼▼▼ [수정] Timeout을 10분으로 늘려 대용량 모델 응답 대기 시간 확보 ▼▼▼
+            services.AddSingleton<HttpClient>(provider =>
+            {
+                return new HttpClient
+                {
+                    BaseAddress = new Uri("http://localhost:11434/"),
+                    Timeout = TimeSpan.FromMinutes(10)
+                };
+            });
+            // ▲▲▲ [수정] 여기까지 ▲▲▲
+
             services.AddSingleton<IPromptService, PromptService>();
 
             // ViewModels
             services.AddSingleton<MainViewModel>();
             services.AddTransient<GitignoreEditViewModel>();
             services.AddTransient<PromptDisplayViewModel>();
-            services.AddTransient<CommitDetailViewModel>(); // 추가된 라인
+            services.AddTransient<CommitDetailViewModel>();
 
             // Views
             services.AddSingleton(s => new MainWindow(s.GetRequiredService<MainViewModel>()));
