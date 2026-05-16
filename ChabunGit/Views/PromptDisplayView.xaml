@@ -5,10 +5,19 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:ChabunGit.ViewModels"
+        xmlns:local="clr-namespace:ChabunGit"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:PromptDisplayViewModel}"
         Title="{Binding Title}" Height="600" Width="750"
         ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
+
+    <!-- ▼▼▼ [추가] 리소스를 창 자체에도 선언하여 App.xaml 참조 실패를 방지 ▼▼▼ -->
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <local:BooleanInverterConverter x:Key="BooleanInverterConverter"/>
+    </Window.Resources>
+    <!-- ▲▲▲ [추가] 여기까지 ▲▲▲ -->
+
     <DockPanel Margin="10">
 
         <!-- 하단 버튼 영역 -->

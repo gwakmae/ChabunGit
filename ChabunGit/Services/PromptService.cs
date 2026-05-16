@@ -2,7 +2,9 @@
 using ChabunGit.Services.Abstractions;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace ChabunGit.Services
@@ -12,6 +14,8 @@ namespace ChabunGit.Services
         private readonly OllamaClient _ollamaClient;
         private readonly PromptBuilder _promptBuilder;
         private readonly GitDiffProvider _diffProvider;
+
+        public Action<string>? OnLog { get; set; }
 
         public PromptService(GitCommandExecutor executor, HttpClient httpClient)
         {
@@ -25,12 +29,51 @@ namespace ChabunGit.Services
         public string CreateCommitPrompt(string diffContent) => _promptBuilder.CreateCommitPrompt(diffContent);
         public Task<string> GetDiffAsync(string repoPath) => _diffProvider.GetDiffAsync(repoPath);
 
+        // ========================================================================
+        // 📦 .gitignore 생성 (토큰 확대 + 정제 + 폴백 적용)
+        // ========================================================================
         public async Task<string> GenerateGitignoreContentAsync(string repoPath, List<string>? excludedPaths = null)
         {
             var prompt = await CreateGitignorePromptAsync(repoPath, excludedPaths);
-            return await _ollamaClient.GenerateAsync(prompt);
+            _ollamaClient.OnLog = OnLog;
+
+            // 1. 토큰 제한을 2500으로 확대하여 잘림 현상 방지
+            string result = await _ollamaClient.GenerateAsync(prompt, maxTokens: 2500);
+
+            // 2. 응답이 비어있거나 오류 메시지일 경우 기본 템플릿으로 폴백
+            if (string.IsNullOrWhiteSpace(result) ||
+                result.Contains("Ollama 응답에서 메시지를 찾을 수 없습니다") ||
+                result.Contains("Ollama API 호출 중 오류"))
+            {
+                OnLog?.Invoke("⚠️ AI 응답이 비어있거나 오류가 발생하여 기본 .gitignore 템플릿으로 대체합니다.");
+                return GenerateFallbackGitignore(excludedPaths);
+            }
+
+            // 3. AI가 붙인 코드블럭/서두 제거 후 반환
+            return AiResponseCleaner.CleanGitignore(result);
         }
 
+        private string GenerateFallbackGitignore(List<string>? excludedPaths)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("# 📦 Build & Dependencies");
+            sb.AppendLine("bin/\nobj/\nnode_modules/\npackages/\n__pycache__/\n*.pyc");
+            sb.AppendLine("\n# 💻 IDE & Editor");
+            sb.AppendLine(".vs/\n.vscode/\n.idea/\n*.suo\n*.user");
+            sb.AppendLine("\n# 🌐 OS");
+            sb.AppendLine(".DS_Store\nThumbs.db\ndesktop.ini");
+
+            if (excludedPaths != null && excludedPaths.Any())
+            {
+                sb.AppendLine("\n# 🚫 User Excluded");
+                foreach (var path in excludedPaths) sb.AppendLine(path);
+            }
+            return sb.ToString();
+        }
+
+        // ========================================================================
+        // 🔄 일반 커밋 메시지 생성 (Map-Reduce 방식)
+        // ========================================================================
         public async Task<string> GenerateCommitMessageAsync(string repoPath, IProgress<string>? progress = null)
         {
             progress?.Report("🔍 변경된 파일 목록을 가져오는 중...");
@@ -43,7 +86,6 @@ namespace ChabunGit.Services
 
             int totalFiles = perFileDiffs.Count;
             progress?.Report($"📂 총 {totalFiles}개 파일 변경 감지. 분석을 시작합니다.");
-
             var fileSummaries = new List<string>();
             var startTime = DateTime.Now;
             int processedCount = 0;
@@ -60,8 +102,8 @@ namespace ChabunGit.Services
                     var etaSeconds = avgPerFile * remainingFiles;
                     etaText = etaSeconds > 60 ? $" (예상 남은 시간: 약 {etaSeconds / 60:F1}분)" : $" (예상 남은 시간: 약 {etaSeconds:F0}초)";
                 }
-                progress?.Report($"📝 [{processedCount}/{totalFiles}] 분석 중: {filePath}{etaText}");
 
+                progress?.Report($"📝 [{processedCount}/{totalFiles}] 분석 중: {filePath}{etaText}");
                 string mapPrompt = $@"You are analyzing a single file's diff. Output ONLY one short English line describing what changed.
 RULES:
 - Format: '<filename>: <what changed in one short sentence>'
@@ -118,6 +160,7 @@ RULES:
 - Output ONLY the bullets.";
             string rawBody = await _ollamaClient.GenerateAsync(bodyPrompt, maxTokens: 600);
             string body = AiResponseCleaner.CleanBody(rawBody);
+
             if (string.IsNullOrWhiteSpace(body))
             {
                 progress?.Report("⚠️ 본문 생성 실패 → 누적 요약을 본문으로 대체");
@@ -132,11 +175,15 @@ RULES:
             return $"<title>{title}</title>\n<body>\n{body}\n</body>";
         }
 
+        // ========================================================================
+        // 🚀 Initial Commit 메시지 생성 (토큰 확대 + 오류 감지 + 폴백 적용)
+        // ========================================================================
         public async Task<string> GenerateInitialCommitMessageAsync(string repoPath, IProgress<string>? progress = null)
         {
             progress?.Report("📂 프로젝트 구조를 분석하는 중...");
             string projectContext = await CreateInitialCommitPromptAsync(repoPath);
             progress?.Report($"✅ 프로젝트 컨텍스트 수집 완료 ({projectContext.Length}자)");
+
             if (string.IsNullOrWhiteSpace(projectContext))
                 return "Initial Commit 메시지를 생성할 수 없습니다. 분석할 프로젝트 정보가 없습니다.";
 
@@ -149,9 +196,21 @@ RULES:
 - Output ONLY one single line.
 PROJECT CONTEXT:
 {projectContext}";
-            string rawTitle = await _ollamaClient.GenerateAsync(titlePrompt, maxTokens: 150);
+
+            // ▼ 토큰 제한 확대 및 오류 응답 폴백 처리 ▼
+            string rawTitle = await _ollamaClient.GenerateAsync(titlePrompt, maxTokens: 300);
             string title = AiResponseCleaner.CleanTitle(rawTitle);
-            progress?.Report($"    ✅ 제목: {title}");
+
+            if (string.IsNullOrWhiteSpace(title) || title.Contains("Ollama 응답에서") || title == "chore: update project")
+            {
+                progress?.Report("⚠️ 제목 생성 실패 → 기본 제목으로 대체");
+                title = "init: project setup";
+            }
+            else
+            {
+                progress?.Report($"    ✅ 제목: {title}");
+            }
+            // ▲ 여기까지 ▲
 
             progress?.Report("📄 [2/2] Initial Commit 본문 생성 중...");
             string bodyPrompt = $@"You are writing the body of a project's first commit message.
@@ -164,8 +223,22 @@ RULES:
 - Output ONLY the bullets.
 PROJECT CONTEXT:
 {projectContext}";
-            string rawBody = await _ollamaClient.GenerateAsync(bodyPrompt, maxTokens: 600);
+
+            // ▼ 토큰 제한 확대 및 오류 응답 폴백 처리 ▼
+            string rawBody = await _ollamaClient.GenerateAsync(bodyPrompt, maxTokens: 1500);
             string body = AiResponseCleaner.CleanBody(rawBody);
+
+            if (string.IsNullOrWhiteSpace(body) || body.Contains("Ollama 응답에서"))
+            {
+                progress?.Report("⚠️ 본문 생성 실패 → 기본 본문으로 대체");
+                body = "- Initial project structure created\n- Added core files and configurations\n\n- 프로젝트 초기 구조 생성\n- 핵심 파일 및 설정 추가";
+            }
+            else
+            {
+                progress?.Report($"    ✅ 본문 생성 완료 ({body.Length}자)");
+            }
+            // ▲ 여기까지 ▲
+
             progress?.Report("🎉 Initial Commit 메시지 생성 완료!");
             return $"<title>{title}</title>\n<body>\n{body}\n</body>";
         }

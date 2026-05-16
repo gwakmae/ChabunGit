@@ -7,6 +7,10 @@ namespace ChabunGit.Services.Abstractions
 {
     public interface IPromptService
     {
+        // ▼▼▼ [추가] 로그 콜백 ▼▼▼
+        Action<string>? OnLog { get; set; }
+        // ▲▲▲ [추가] 여기까지 ▲▲▲
+
         Task<string> CreateInitialCommitPromptAsync(string repoPath);
 
         Task<string> CreateGitignorePromptAsync(string repoPath,
@@ -18,7 +22,6 @@ namespace ChabunGit.Services.Abstractions
         Task<string> GetDiffAsync(string repoPath);
         string CreateCommitPrompt(string diffContent);
 
-        // 진행률(Progress) 파라미터 추가
         Task<string> GenerateCommitMessageAsync(string repoPath, IProgress<string>? progress = null);
         Task<string> GenerateInitialCommitMessageAsync(string repoPath, IProgress<string>? progress = null);
     }

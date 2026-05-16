@@ -82,6 +82,7 @@ namespace ChabunGit.Services
                         promptBuilder.AppendLine(section);
                         includedFiles++;
                     }
+
                     promptBuilder.AppendLine();
                     promptBuilder.AppendLine("--- 분석 참고 ---");
                     promptBuilder.AppendLine($"분석에 포함된 파일 수: {includedFiles}");
@@ -92,6 +93,7 @@ namespace ChabunGit.Services
                 {
                     promptBuilder.AppendLine($"\n파일을 읽는 중 오류 발생: {ex.Message}");
                 }
+
                 return promptBuilder.ToString();
             });
         }
@@ -109,10 +111,16 @@ namespace ChabunGit.Services
                 var rootFiles = Directory.GetFiles(repoPath).Select(Path.GetFileName).Where(name => !string.IsNullOrEmpty(name)).ToList();
                 var detectedStack = DetectProjectStack(extensionGroups, rootFiles!, topLevelDirs!);
 
-                promptBuilder.AppendLine("아래는 내 프로젝트의 파일 및 폴더 구조에 대한 정보입니다.");
-                promptBuilder.AppendLine("이 정보를 바탕으로, 이 프로젝트에 최적화된 .gitignore 파일을 생성해주세요.");
-                promptBuilder.AppendLine("반드시 감지된 언어와 프레임워크에 맞는 항목만 포함하고, 관계없는 언어의 항목은 절대 포함하지 마세요.");
+                // ▼▼▼ [수정] AI 출력 규칙 강화 및 간소화 ▼▼▼
+                promptBuilder.AppendLine("You are a .gitignore generator. Analyze the project info below and output ONLY the .gitignore content.");
+                promptBuilder.AppendLine("RULES:");
+                promptBuilder.AppendLine("- Include sections: OS, IDE/Editor, Language/Framework, Build/Dependencies, Logs/Temp.");
+                promptBuilder.AppendLine("- Add Korean comments (#) for each section.");
+                promptBuilder.AppendLine("- DO NOT add explanations, markdown headers, or code blocks. ONLY raw .gitignore text.");
+                promptBuilder.AppendLine("- If unsure, use safe common patterns. Keep it under 120 lines.");
                 promptBuilder.AppendLine();
+                // ▲▲▲ [수정] 여기까지 ▲▲▲
+
                 promptBuilder.AppendLine("--- 프로젝트 정보 ---");
                 promptBuilder.AppendLine($"감지된 언어/프레임워크: {detectedStack}");
                 promptBuilder.AppendLine($"주요 폴더: {string.Join(", ", topLevelDirs)}");
@@ -126,6 +134,7 @@ namespace ChabunGit.Services
                     promptBuilder.AppendLine("아래 항목들은 .gitignore에 반드시 포함되어야 합니다:");
                     foreach (var path in excludedPaths) promptBuilder.AppendLine($"  {path}");
                 }
+
                 if (detectedStack.Contains("MQL5"))
                 {
                     promptBuilder.AppendLine();
@@ -134,6 +143,7 @@ namespace ChabunGit.Services
                     promptBuilder.AppendLine("- Include/ 폴더 안의 .mqh 파일들은 프로젝트에 반드시 필요한 헤더 파일입니다.");
                     promptBuilder.AppendLine("- 무시해야 할 것: *.ex4, *.ex5 (컴파일된 바이너리), Logs/, Tester/ 결과, Presets/ 등");
                 }
+
                 promptBuilder.AppendLine();
                 promptBuilder.AppendLine("--- 요구사항 ---");
                 promptBuilder.AppendLine($"- 위에서 감지된 '{detectedStack}' 프로젝트에 맞는 .gitignore를 생성해주세요.");
@@ -145,6 +155,7 @@ namespace ChabunGit.Services
             {
                 return Task.FromResult($"프로젝트 파일 분석 중 오류가 발생했습니다: {ex.Message}\n분석한 프로젝트에 맞는 .gitignore 파일을 생성해 주세요.");
             }
+
             return Task.FromResult(promptBuilder.ToString());
         }
 
