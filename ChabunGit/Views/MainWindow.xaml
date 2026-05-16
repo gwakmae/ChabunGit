@@ -58,7 +58,7 @@
                     <Button Content="⬇️ 원격 확인 (Fetch)"
                             Command="{Binding FetchCommand}"
                             Style="{StaticResource MainActionButtonStyle}"/>
-                    <Button Content="❤️ 원격 가져오기 (Pull)"
+                    <Button Content="⤵️ 원격 가져오기 (Pull)"
                             Command="{Binding PullCommand}"
                             Style="{StaticResource MainActionButtonStyle}"/>
                     <Button Content="✨ GitHub에 공유 (Push)"
@@ -197,7 +197,6 @@
                                         Margin="5,0,0,0"
                                         ToolTip="AI를 활용하여 커밋 메시지를 자동으로 생성합니다."/>
 
-                                <!-- ▼▼▼ [추가] Initial Commit AI 생성 버튼 ▼▼▼ -->
                                 <Button Content="🚀 AI Initial Commit"
                                         Command="{Binding GenerateInitialCommitWithAICommand}"
                                         Margin="5,0,0,0"
@@ -209,7 +208,6 @@
                                         Cursor="Hand"
                                         MinWidth="120"
                                         ToolTip="프로젝트 전체 코드를 AI가 분석하여 Initial Commit 메시지를 생성합니다. 첫 커밋에 사용하세요."/>
-                                <!-- ▲▲▲ [추가] 여기까지 ▲▲▲ -->
 
                                 <Button Content="커밋"
                                         Command="{Binding CommitCommand}"
@@ -305,16 +303,55 @@
             </StackPanel>
         </Border>
 
-        <!-- 처리 중 오버레이 -->
+        <!-- ▼▼▼ 변경됨: 처리 중 오버레이 (진행률 표시) ▼▼▼ -->
         <Border Background="#80000000"
                 Visibility="{Binding IsBusy,
                              Converter={StaticResource BooleanToVisibilityConverter},
                              FallbackValue=Collapsed}">
-            <TextBlock Text="처리 중..."
-                       Foreground="White"
-                       FontSize="24"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"/>
+            <Border Background="#1E1E1E"
+                    CornerRadius="8"
+                    Padding="30,20"
+                    MaxWidth="700"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    BorderBrush="#4CAF50"
+                    BorderThickness="2">
+                <StackPanel>
+                    <!-- 무한 스크롤 진행률 바 -->
+                    <ProgressBar IsIndeterminate="True"
+                                 Height="6"
+                                 Margin="0,0,0,15"
+                                 Background="Transparent"
+                                 Foreground="#4CAF50"
+                                 BorderThickness="0"/>
+
+                    <!-- 메인 텍스트 -->
+                    <TextBlock Text="AI 처리 진행 중"
+                               Foreground="White"
+                               FontSize="20"
+                               FontWeight="Bold"
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,10"/>
+
+                    <!-- 실시간 상태 메시지 바인딩 -->
+                    <TextBlock Text="{Binding BusyStatusText}"
+                               Foreground="#B3FFFFFF"
+                               FontSize="14"
+                               HorizontalAlignment="Center"
+                               TextWrapping="Wrap"
+                               TextAlignment="Center"
+                               MaxWidth="600"/>
+
+                    <!-- 안내 메시지 -->
+                    <TextBlock Text="잠시만 기다려주세요. 변경 파일이 많을수록 시간이 더 걸립니다."
+                               Foreground="#80FFFFFF"
+                               FontSize="11"
+                               HorizontalAlignment="Center"
+                               Margin="0,15,0,0"
+                               FontStyle="Italic"/>
+                </StackPanel>
+            </Border>
         </Border>
+        <!-- ▲▲▲ 여기까지 ▲▲▲ -->
     </Grid>
 </Window>

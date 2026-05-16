@@ -23,11 +23,11 @@ namespace ChabunGit.ViewModels
         private async Task GenerateGitignorePromptAsync()
         {
             IsBusy = true;
+            BusyStatusText = "질문지 생성 중...";
             try
             {
                 AddLog(".gitignore 생성을 위한 AI 질문지를 만드는 중...");
 
-                // ▼▼▼ 폴더 선택 다이얼로그 먼저 표시 ▼▼▼
                 IsBusy = false;
                 var excludedPaths = _dialogService.ShowFolderSelector(SelectedFolder!);
                 IsBusy = true;
@@ -46,6 +46,7 @@ namespace ChabunGit.ViewModels
             finally
             {
                 IsBusy = false;
+                BusyStatusText = "처리 중...";
             }
         }
 
@@ -53,9 +54,9 @@ namespace ChabunGit.ViewModels
         private async Task GenerateGitignoreWithAIAsync()
         {
             IsBusy = true;
+            BusyStatusText = "AI .gitignore 생성 중...";
             try
             {
-                // ▼▼▼ 폴더 선택 다이얼로그 먼저 표시 ▼▼▼
                 IsBusy = false;
                 var excludedPaths = _dialogService.ShowFolderSelector(SelectedFolder!);
                 IsBusy = true;
@@ -102,6 +103,7 @@ namespace ChabunGit.ViewModels
             finally
             {
                 IsBusy = false;
+                BusyStatusText = "처리 중...";
             }
         }
 
@@ -109,6 +111,7 @@ namespace ChabunGit.ViewModels
         private async Task AnalyzeChangesAsync()
         {
             IsBusy = true;
+            BusyStatusText = "변경점 분석 중...";
             try
             {
                 AddLog("변경점 분석을 시작합니다...");
@@ -132,17 +135,27 @@ namespace ChabunGit.ViewModels
             finally
             {
                 IsBusy = false;
+                BusyStatusText = "처리 중...";
             }
         }
 
+        // ▼▼▼ 진행률 기능이 추가된 커밋 생성 커맨드 ▼▼▼
         [RelayCommand(CanExecute = nameof(IsRepoValid))]
         private async Task GenerateCommitMessageWithAIAsync()
         {
             IsBusy = true;
+            BusyStatusText = "AI 커밋 메시지 생성 준비 중...";
             try
             {
                 AddLog("AI를 사용하여 커밋 메시지를 생성하는 중...");
-                string aiGeneratedMessage = await _promptService.GenerateCommitMessageAsync(SelectedFolder!);
+
+                var progress = new Progress<string>(message =>
+                {
+                    BusyStatusText = message; // 오버레이 텍스트 갱신
+                    AddLog(message);          // 로그창에 동시 출력
+                });
+
+                string aiGeneratedMessage = await _promptService.GenerateCommitMessageAsync(SelectedFolder!, progress);
 
                 if (aiGeneratedMessage.StartsWith("Ollama API 호출 중 오류") ||
                     aiGeneratedMessage.Contains("변경 사항이 없어"))
@@ -170,22 +183,35 @@ namespace ChabunGit.ViewModels
             finally
             {
                 IsBusy = false;
+                BusyStatusText = "처리 중...";
             }
         }
 
-        // ▼▼▼ [추가] Initial Commit AI 생성 커맨드 ▼▼▼
+        // ▼▼▼ 진행률 기능이 추가된 Initial 커밋 생성 커맨드 ▼▼▼
         [RelayCommand(CanExecute = nameof(IsRepoValid))]
         private async Task GenerateInitialCommitWithAIAsync()
         {
             IsBusy = true;
+            BusyStatusText = "AI Initial Commit 생성 준비 중...";
             try
             {
                 AddLog("AI를 사용하여 Initial Commit 메시지를 생성하는 중...");
-                AddLog("프로젝트의 전체 소스 코드를 분석합니다. 시간이 다소 걸릴 수 있습니다.");
 
-                string aiGeneratedMessage = await _promptService.GenerateInitialCommitMessageAsync(SelectedFolder!);
+                var progress = new Progress<string>(message =>
+                {
+                    BusyStatusText = message;
+                    AddLog(message);
+                });
 
-                if (aiGeneratedMessage.StartsWith("Ollama API 호출 중 오류"))
+                var startTime = DateTime.Now;
+
+                string aiGeneratedMessage = await _promptService.GenerateInitialCommitMessageAsync(SelectedFolder!, progress);
+
+                var elapsedSeconds = (DateTime.Now - startTime).TotalSeconds;
+                AddLog($"AI Initial Commit 응답 수신 완료. 소요 시간: {elapsedSeconds:F1}초");
+
+                if (aiGeneratedMessage.StartsWith("Ollama API 호출 중 오류") ||
+                    aiGeneratedMessage.Contains("생성할 수 없습니다"))
                 {
                     AddLog($"❌ AI 생성 실패: {aiGeneratedMessage}");
                     _dialogService.ShowMessage(
@@ -210,24 +236,27 @@ namespace ChabunGit.ViewModels
             finally
             {
                 IsBusy = false;
+                BusyStatusText = "처리 중...";
             }
         }
-        // ▲▲▲ [추가] 여기까지 ▲▲▲
 
         [RelayCommand(CanExecute = nameof(GuideCanInit))]
         private async Task InitializeGitAsync()
         {
             if (SelectedFolder is null) return;
             IsBusy = true;
+            BusyStatusText = "Git 저장소 초기화 중...";
             try
             {
                 AddLog("Git 저장소 초기화 중...");
                 var result = await _gitService.InitRepositoryAsync(SelectedFolder);
                 AddLog(result.Output + result.Error);
+
                 if (result.ExitCode == 0)
                 {
                     await _gitService.EnsureUtf8ConfigAsync(SelectedFolder);
                     AddLog("✅ Git 저장소 초기화 성공!");
+
                     IsRepoValid = true;
                     GuideCanInit = false;
                     GuideCanAddRemote = true;
@@ -245,6 +274,7 @@ namespace ChabunGit.ViewModels
             finally
             {
                 IsBusy = false;
+                BusyStatusText = "처리 중...";
             }
         }
 
@@ -259,14 +289,17 @@ namespace ChabunGit.ViewModels
         {
             if (SelectedFolder is null) return;
             IsBusy = true;
+            BusyStatusText = "원격 저장소 연결 중...";
             try
             {
                 AddLog("원격 저장소 연결 중...");
                 var result = await _gitService.AddRemoteAsync(SelectedFolder, NewProjectGitHubUrl.Trim());
                 AddLog(result.Output + result.Error);
+
                 if (result.ExitCode == 0)
                 {
                     _dialogService.ShowMessage("원격 저장소가 성공적으로 연결되었습니다.", "성공");
+
                     NewProjectGitHubUrl = "";
                     IsLocalRepoWithoutRemote = false;
                     GuideCanAddRemote = false;
@@ -285,6 +318,7 @@ namespace ChabunGit.ViewModels
             finally
             {
                 IsBusy = false;
+                BusyStatusText = "처리 중...";
             }
         }
 
@@ -297,6 +331,7 @@ namespace ChabunGit.ViewModels
             {
                 AddLog("주 브랜치를 'main'으로 설정 중...");
                 await _gitService.SetMainBranchAsync(SelectedFolder);
+
                 IsNewProjectGuideActive = false;
                 await RefreshRepositoryInfoAsync();
             }

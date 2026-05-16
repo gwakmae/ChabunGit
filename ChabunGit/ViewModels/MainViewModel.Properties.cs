@@ -9,11 +9,26 @@ namespace ChabunGit.ViewModels
     public partial class MainViewModel
     {
         // UI 상태 관련 속성
-        [ObservableProperty] private bool _isBusy;
-        [ObservableProperty] private bool _isNewProjectGuideActive;
-        [ObservableProperty] private bool _isLocalRepoWithoutRemote;
-        [ObservableProperty] private string _fetchStatus = "초기화";
-        [ObservableProperty] private bool _isForcePushChecked;
+        [ObservableProperty]
+        private bool _isBusy;
+
+        // ▼▼▼ 누락되었던 진행률 텍스트 변수 추가 ▼▼▼
+        [ObservableProperty]
+        private string _busyStatusText = "처리 중...";
+        // ▲▲▲ ▲▲▲ ▲▲▲ ▲▲▲ ▲▲▲ ▲▲▲ ▲▲▲ ▲▲▲
+
+        [ObservableProperty]
+        private bool _isNewProjectGuideActive;
+
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(AddRemoteCommand))]
+        private bool _isLocalRepoWithoutRemote;
+
+        [ObservableProperty]
+        private string _fetchStatus = "초기화";
+
+        [ObservableProperty]
+        private bool _isForcePushChecked;
 
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(
@@ -25,8 +40,9 @@ namespace ChabunGit.ViewModels
             nameof(ResetToCommitCommand),
             nameof(EditGitignoreCommand),
             nameof(GenerateGitignorePromptCommand),
-            nameof(GenerateGitignoreWithAICommand),       // ▼ [추가]
-            nameof(GenerateCommitMessageWithAICommand),   // 기존
+            nameof(GenerateGitignoreWithAICommand),
+            nameof(GenerateCommitMessageWithAICommand),
+            nameof(GenerateInitialCommitWithAICommand),
             nameof(AnalyzeChangesCommand),
             nameof(StopTrackingFileCommand)
         )]
@@ -37,11 +53,21 @@ namespace ChabunGit.ViewModels
         private bool _canPull;
 
         // 데이터 관련 속성
-        [ObservableProperty] private string? _selectedFolder;
-        [ObservableProperty] private string _currentBranch = "현재 브랜치: N/A";
-        [ObservableProperty][NotifyCanExecuteChangedFor(nameof(CommitCommand))] private string _commitTitle = "";
-        [ObservableProperty] private string _commitBody = "";
-        [ObservableProperty] private string _titleCharCountText = "제목 (50자 제한) : 0/50";
+        [ObservableProperty]
+        private string? _selectedFolder;
+
+        [ObservableProperty]
+        private string _currentBranch = "현재 브랜치: N/A";
+
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(CommitCommand))]
+        private string _commitTitle = "";
+
+        [ObservableProperty]
+        private string _commitBody = "";
+
+        [ObservableProperty]
+        private string _titleCharCountText = "제목 (50자 제한) : 0/50";
 
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(CopyLogCommand))]
@@ -59,12 +85,22 @@ namespace ChabunGit.ViewModels
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(AddRemoteCommand))]
         private string _newProjectGitHubUrl = "";
-        [ObservableProperty] private bool _guideCanInit = true;
-        [ObservableProperty] private bool _guideCanAddRemote;
-        [ObservableProperty] private bool _guideCanComplete;
+
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(InitializeGitCommand))]
+        private bool _guideCanInit = true;
+
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(AddRemoteCommand))]
+        private bool _guideCanAddRemote;
+
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(CompleteGuideCommand))]
+        private bool _guideCanComplete;
 
         // 컬렉션
         public ObservableCollection<string> ChangedFiles { get; } = new();
+
         public ObservableCollection<CommitInfo> CommitHistory { get; } = new();
 
         // 계산 속성
