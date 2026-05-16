@@ -65,41 +65,47 @@ namespace ChabunGit.ViewModels
                 if (excludedPaths != null && excludedPaths.Any())
                     AddLog($"사용자 지정 제외 항목 {excludedPaths.Count}개 포함.");
 
-                // ▼▼▼ [추가] Ollama 내부 로그를 앱 로그창에 연결 ▼▼▼
+                // Ollama 내부 로그를 앱 로그창에 연결
                 _promptService.OnLog = msg => AddLog(msg);
-                // ▲▲▲ [추가] 여기까지 ▲▲▲
 
                 string aiGeneratedContent = await _promptService.GenerateGitignoreContentAsync(
                     SelectedFolder!, excludedPaths ?? new List<string>());
 
-                // ▼▼▼ [디버그] 응답 길이 확인 ▼▼▼
+                // ▼▼▼ [수정] CS8602 경고 근본 해결: Null/공백 체크를 상위에서 먼저 처리 ▼▼▼
                 AddLog($"🔍 AI 응답 길이: {aiGeneratedContent?.Length ?? 0}자");
-                if (!string.IsNullOrWhiteSpace(aiGeneratedContent))
-                    AddLog($"🔍 앞 50자: {aiGeneratedContent[..Math.Min(50, aiGeneratedContent.Length)]}");
-                else
+
+                if (string.IsNullOrWhiteSpace(aiGeneratedContent))
+                {
                     AddLog("⚠️ AI 응답이 비어있습니다.");
-                // ▲▲▲ [디버그] 여기까지 ▲▲▲
-
-                if (aiGeneratedContent.StartsWith("Ollama API 호출 중 오류"))
-                {
-                    AddLog($"❌ AI 생성 실패: {aiGeneratedContent}");
-                    _dialogService.ShowMessage(
-                        $"AI .gitignore 생성에 실패했습니다.\n\n{aiGeneratedContent}", "AI 오류");
-                    return;
                 }
-
-                if (aiGeneratedContent == "Ollama 응답에서 메시지를 찾을 수 없습니다.")
+                else
                 {
-                    AddLog("❌ AI 생성 실패: Ollama 응답을 파싱하지 못했습니다. 로그를 확인하세요.");
-                    _dialogService.ShowMessage(
-                        "Ollama가 응답했지만 내용을 읽지 못했습니다.\n\n로그창의 [Ollama 원문] 내용을 확인해주세요.",
-                        "파싱 오류");
-                    return;
+                    // ✅ 이 블록 안에서는 컴파일러가 aiGeneratedContent를 '절대 null 아님'으로 확정합니다.
+                    int previewLen = Math.Min(50, aiGeneratedContent.Length);
+                    AddLog($"🔍 앞 50자: {aiGeneratedContent[..previewLen]}");
+
+                    if (aiGeneratedContent.StartsWith("Ollama API 호출 중 오류"))
+                    {
+                        AddLog($"❌ AI 생성 실패: {aiGeneratedContent}");
+                        _dialogService.ShowMessage(
+                            $"AI .gitignore 생성에 실패했습니다.\n\n{aiGeneratedContent}", "AI 오류");
+                        return;
+                    }
+
+                    if (aiGeneratedContent == "Ollama 응답에서 메시지를 찾을 수 없습니다.")
+                    {
+                        AddLog("❌ AI 생성 실패: Ollama 응답을 파싱하지 못했습니다. 로그를 확인하세요.");
+                        _dialogService.ShowMessage(
+                            "Ollama가 응답했지만 내용을 읽지 못했습니다.\n\n로그창의 [Ollama 원문] 내용을 확인해주세요.",
+                            "파싱 오류");
+                        return;
+                    }
                 }
+                // ▲▲▲ [수정] 여기까지 ▲▲▲
 
                 AddLog("AI .gitignore 생성 완료. 결과 창을 확인하세요.");
 
-                _dialogService.ShowAiGitignoreResult(aiGeneratedContent, async (content) =>
+                _dialogService.ShowAiGitignoreResult(aiGeneratedContent!, async (content) =>
                 {
                     try
                     {
