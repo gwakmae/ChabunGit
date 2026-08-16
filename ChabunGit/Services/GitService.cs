@@ -68,13 +68,44 @@ namespace ChabunGit.Services
         public async Task<GitCommandExecutor.ProcessResult> FetchAsync(string repoPath) => await Executor.ExecuteAsync(repoPath, "fetch");
         public async Task<GitCommandExecutor.ProcessResult> PullAsync(string repoPath) => await Executor.ExecuteAsync(repoPath, "pull");
 
+        // ▼▼▼ [수정] --force 대신 --force-with-lease 사용 ▼▼▼
         public async Task<GitCommandExecutor.ProcessResult> PushAsync(string repoPath, bool isForce, bool isFirstPush)
         {
             string command = "push";
             if (isFirstPush) command += " -u origin HEAD";
-            if (isForce) command += " --force";
+            // --force-with-lease: 원격이 내가 마지막으로 fetch한 상태 그대로일 때만
+            // 강제 덮어쓰기를 허용합니다. 다른 사람이 그 사이 푸시했다면 안전하게 거절됩니다.
+            if (isForce) command += " --force-with-lease";
             return await Executor.ExecuteAsync(repoPath, command);
         }
+
+        // ▼▼▼ [추가] rebase 기반 pull: 로컬 변경을 자동 stash → 원격 반영 → 복원 ▼▼▼
+        /// <summary>
+        /// git pull --rebase --autostash를 실행합니다.
+        /// 커밋하지 않은 작업 중인 변경사항이 있어도 자동으로 임시 저장(stash) 후
+        /// rebase를 수행하고 다시 복원하므로, 히스토리가 merge 커밋 없이 깔끔하게 유지됩니다.
+        /// </summary>
+        public async Task<GitCommandExecutor.ProcessResult> PullRebaseAsync(string repoPath)
+            => await Executor.ExecuteAsync(repoPath, "pull --rebase --autostash");
+
+        // ▼▼▼ [추가] 원격 대비 로컬 상태 확인 (ahead/behind/diverged) ▼▼▼
+        /// <summary>
+        /// origin 브랜치 대비 로컬 브랜치의 상태를 반환합니다.
+        /// 반환값: "up-to-date" | "ahead" | "behind" | "diverged" | "no-upstream" | "unknown"
+        /// </summary>
+        public async Task<string> GetRemoteSyncStatusAsync(string repoPath)
+        {
+            var result = await Executor.ExecuteAsync(repoPath, "status -sb");
+            if (result.ExitCode != 0) return "unknown";
+
+            string status = result.Output;
+            if (!status.Contains("...")) return "no-upstream";
+            if (status.Contains("ahead") && status.Contains("behind")) return "diverged";
+            if (status.Contains("behind")) return "behind";
+            if (status.Contains("ahead")) return "ahead";
+            return "up-to-date";
+        }
+        // ▲▲▲ [추가] 여기까지 ▲▲▲
 
         public async Task<GitCommandExecutor.ProcessResult> ResetLastCommitAsync(string repoPath) => await Executor.ExecuteAsync(repoPath, "reset --soft HEAD~1");
         public async Task<GitCommandExecutor.ProcessResult> ResetToCommitAsync(string repoPath, string commitHash) => await Executor.ExecuteAsync(repoPath, $"reset --hard {commitHash}");
@@ -130,15 +161,12 @@ namespace ChabunGit.Services
             }
         }
 
-        // ▼▼▼ [추가] 파일 추적을 중단하는 git rm --cached 명령어를 실행하는 메서드를 추가합니다. ▼▼▼
         public async Task<GitCommandExecutor.ProcessResult> StopTrackingFileAsync(string repoPath, string filePath)
         {
             // 파일 경로에 공백이 있을 수 있으므로 따옴표로 감싸줍니다.
             return await Executor.ExecuteAsync(repoPath, $"rm --cached \"{filePath}\"");
         }
-        // ▲▲▲ [추가] 여기까지 ▲▲▲
 
-        // ▼▼▼ [추가] 인덱스 잠금 파일(index.lock) 삭제를 시도하는 메서드를 추가합니다. ▼▼▼
         public Task<bool> TryUnlockIndexAsync(string repoPath)
         {
             try
@@ -157,6 +185,5 @@ namespace ChabunGit.Services
                 return Task.FromResult(false); // 권한 등의 문제로 삭제 실패 시
             }
         }
-        // ▲▲▲ [추가] 여기까지 ▲▲▲
     }
 }
