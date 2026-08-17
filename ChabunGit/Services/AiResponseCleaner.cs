@@ -6,6 +6,22 @@ namespace ChabunGit.Services
 {
     public static class AiResponseCleaner
     {
+        // ▼▼▼ [추가] 추론형 모델이 출력하는 <think>...</think> 블록 제거 ▼▼▼
+        private static string StripThinking(string raw)
+            => Regex.Replace(raw, @"<think>[\s\S]*?</think>", "", RegexOptions.IgnoreCase);
+        // ▲▲▲ [추가] 여기까지 ▲▲▲
+
+        // ▼▼▼ [추가] 단어 중간이 아닌 공백 경계에서 자르기 ▼▼▼
+        // "proper flex b"처럼 단어 중간에서 끊기는 것을 방지합니다.
+        private static string TruncateAtWordBoundary(string text, int maxLength)
+        {
+            if (text.Length <= maxLength) return text;
+            int cut = text.LastIndexOf(' ', maxLength);
+            // 공백이 너무 앞에 있으면(절반 미만) 그냥 잘라냅니다.
+            return cut >= maxLength / 2 ? text[..cut] : text[..maxLength];
+        }
+        // ▲▲▲ [추가] 여기까지 ▲▲▲
+
         /// <summary>
         /// AI가 생성한 커밋 제목을 정제합니다.
         /// </summary>
@@ -13,6 +29,7 @@ namespace ChabunGit.Services
         {
             if (string.IsNullOrWhiteSpace(raw)) return "chore: update project";
 
+            raw = StripThinking(raw); // [추가]
             raw = Regex.Replace(raw, @"```[\w]*", "");
             raw = Regex.Replace(raw, @"</?title>|</?body>", "", RegexOptions.IgnoreCase);
 
@@ -27,7 +44,8 @@ namespace ChabunGit.Services
             string title = typed ?? lines.FirstOrDefault() ?? "chore: update project";
             title = Regex.Replace(title, @"^(here\s+is\s+the\s+(commit\s+)?title\s*[:：]?\s*)", "", RegexOptions.IgnoreCase).Trim();
 
-            if (title.Length > 50) title = title[..50];
+            // [수정] 단어 경계에서 자르도록 변경
+            title = TruncateAtWordBoundary(title, 50);
             return title.TrimEnd('.', ' ', '\t');
         }
 
@@ -38,6 +56,7 @@ namespace ChabunGit.Services
         {
             if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
 
+            raw = StripThinking(raw); // [추가]
             raw = Regex.Replace(raw, @"```[\w]*", "");
             raw = Regex.Replace(raw, @"</?title>|</?body>", "", RegexOptions.IgnoreCase);
             raw = Regex.Replace(raw, @"^#+\s+.*$", "", RegexOptions.Multiline);
@@ -52,6 +71,7 @@ namespace ChabunGit.Services
         {
             if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
 
+            raw = StripThinking(raw); // [추가]
             raw = Regex.Replace(raw, @"```[\w]*", "");
             raw = Regex.Replace(raw, @"</?title>|</?body>", "", RegexOptions.IgnoreCase);
 
@@ -67,13 +87,14 @@ namespace ChabunGit.Services
             return firstLine;
         }
 
-        // ▼▼▼ [추가] .gitignore 전용 정제 메서드 ▼▼▼
         /// <summary>
         /// AI가 생성한 .gitignore 내용에서 코드블럭, 불필요한 서두/결말을 제거합니다.
         /// </summary>
         public static string CleanGitignore(string raw)
         {
             if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+
+            raw = StripThinking(raw); // [추가]
 
             // 마크다운 코드블럭 제거
             raw = Regex.Replace(raw, @"```[\w]*\n?", "", RegexOptions.Multiline);
@@ -87,6 +108,5 @@ namespace ChabunGit.Services
 
             return string.Join("\n", lines).Trim();
         }
-        // ▲▲▲ [추가] 여기까지 ▲▲▲
     }
 }
